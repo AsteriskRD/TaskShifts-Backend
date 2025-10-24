@@ -18,7 +18,10 @@
       "socket.io",
       "jsonwebtoken",
       "redis",
-      "dotenv"
+      "dotenv",
+      "bcrypt",
+      "axios",
+      "nodemailer"
     ]
   },
   "include": ["src/**/*"],
