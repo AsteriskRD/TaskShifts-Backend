@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import { expressjwt } from 'express-jwt';
 // Routes imports here
+import authRoutes from './routes/authRoutes';
 
 
 // Load environment variables from .env
@@ -20,10 +21,11 @@ app.use(express.json());
 app.use(expressjwt({
     secret: process.env.JWT_SECRET || 'secret',
     algorithms: ['HS256'] 
-  }).unless({ path: ['/api/users/register', '/api/users/login', '/health'] })
+  }).unless({ path: ['/api/users/register', '/api/users/login', '/health', '/api/users/verify-email'] })
 );
 
 // Routes
+app.use('/api/auth', authRoutes);
 
 
 // Health check
