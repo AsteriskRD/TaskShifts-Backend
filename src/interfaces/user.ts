@@ -19,7 +19,7 @@ export interface LocationDetails {
   country: string;
   state: string;
   postalCode?: string;
-  coordinates?: [number, number]; // Longitude, latitude for geospatial matching (Optional)
+  coordinates?: [number, number]; // Longitude, latitude for geospatial matching
 }
 
 export interface IClient extends IUser {
