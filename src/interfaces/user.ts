@@ -6,6 +6,7 @@ export interface IUser extends Document {
   passwordHash: string;
   userType: 'client' | 'provider';
   isVerified: boolean;
+  termsAccepted: boolean;
   verificationCode?: string;
   verificationCodeExpires?: Date;
   isPremium: boolean; // For revenue features (subscriptions)
