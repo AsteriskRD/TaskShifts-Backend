@@ -5,6 +5,8 @@ import cors from 'cors';
 import { expressjwt } from 'express-jwt';
 // Routes imports here
 import authRoutes from './routes/authRoutes';
+import googleAuthRoutes from './routes/googleAuthRoutes';
+import profileRoutes from './routes/profileRoutes';
 
 
 // Load environment variables from .env
@@ -24,8 +26,10 @@ app.use(expressjwt({
   }).unless({ path: ['/api/users/register', '/api/users/login', '/health', '/api/users/verify-email'] })
 );
 
-// Routes
-app.use('/api/auth', authRoutes);
+// Mount Routes
+app.use('/api/auth', authRoutes); // Mount the authRoutes
+app.use('/auth', googleAuthRoutes); // Mount the googleAuthRoutes
+app.use('/auth', profileRoutes); // Mount the profileRoutes
 
 
 // Health check
