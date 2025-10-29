@@ -1,8 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-export const generateToken = (userId: string) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
+export const generateToken = (user: any) => {
+
+  const JWT_SECRET = process.env.JWT_SECRET as string;
+
+  return jwt.sign(
+    { 
+      userId: user.userId,
+    },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
 };
 
 export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
