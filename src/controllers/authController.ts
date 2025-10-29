@@ -8,7 +8,7 @@ import axios from 'axios';
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, confirmPassword, userType, firstName, lastName, phone, location, service, availability } = req.body;
+    const { email, password, confirmPassword, userType, firstName, lastName, phone, location, service, termsAccepted, availability } = req.body;
 
     // Validation: Password match
     if (password !== confirmPassword) {
@@ -89,6 +89,7 @@ export const register = async (req: Request, res: Response) => {
       phone,
       location: userLocation,
       ...(userType === 'provider' && { service, availability }),
+      termsAccepted,
       verificationCode,
       verificationCodeExpires,
     };
