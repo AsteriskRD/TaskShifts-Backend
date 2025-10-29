@@ -21,7 +21,8 @@
       "dotenv",
       "bcrypt",
       "axios",
-      "nodemailer"
+      "nodemailer",
+      "node-geocoder"
     ]
   },
   "include": ["src/**/*"],
