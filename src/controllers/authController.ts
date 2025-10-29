@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
+import { getCoordinates } from '../utils/geocode';
 import { LocationDetails } from '../interfaces/user';
 import { UserModel, ClientModel, ProviderModel } from '../models/user';
 import sendVerificationEmail from '../services/verifyEmailService';
@@ -47,37 +48,20 @@ export const register = async (req: Request, res: Response) => {
 
     const { address, city, country, state, postalCode } = location || {};
 
-    let coordinates: [number, number] = [0, 0]; // Default
-    if (postalCode) {
-      try {
-        const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
-          params: { address: postalCode, key: process.env.GOOGLE_MAPS_API_KEY },
-        });
-        if (response.data.results && response.data.results[0]) {
-          const { lat, lng } = response.data.results[0].geometry.location;
-          coordinates = [lng, lat];
-          // Extract address details from response for completeness (fallback to user input)
-          const components = response.data.results[0].address_components;
-          location.city = location.city || components.find((comp: any) => comp.types.includes('locality'))?.long_name || city;
-          location.country = location.country || components.find((comp: any) => comp.types.includes('country'))?.long_name || country;
-          location.state = location.state || components.find((comp: any) => comp.types.includes('administrative_area_level_1'))?.long_name || state;
-          location.address = location.address || response.data.results[0].formatted_address;
-        } else {
-          console.warn('TaskShifts: No geocoding results for postal code', postalCode);
-        }
-      } catch (geocodeError) {
-        console.error('TaskShifts: Geocoding failed for postal code', postalCode, geocodeError);
-        // Fallback to user-provided location details (no coordinates)
-      }
+    // Use OpenCage/Google fallback for coordinates
+    let coords = null;
+    if (postalCode && country) {
+      coords = await getCoordinates(postalCode, country);
     }
-
     const userLocation: LocationDetails = {
-      address: address || '',
-      city: city || '',
-      country: country || '',
-      state: state || '',
-      postalCode: postalCode || undefined,
-      coordinates,
+      address,
+      city,
+      country,
+      state,
+      postalCode,
+      coordinates: coords
+        ? [coords.longitude, coords.latitude]
+        : [0, 0],
     };
 
     const userData = {
@@ -89,6 +73,8 @@ export const register = async (req: Request, res: Response) => {
       phone,
       location: userLocation,
       ...(userType === 'provider' && { service, availability }),
+      isVerified: false,
+      isProfileComplete: true,
       termsAccepted,
       verificationCode,
       verificationCodeExpires,
