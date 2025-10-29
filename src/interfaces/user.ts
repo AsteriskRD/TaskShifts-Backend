@@ -3,9 +3,11 @@ import { Document } from 'mongoose';
 export interface IUser extends Document {
   userId: string;
   email: string;
-  passwordHash: string;
+  passwordHash?: string; // optional for Google users
+  googleId?: string; // optional for email user
   userType: 'client' | 'provider';
   isVerified: boolean;
+  isProfileComplete: boolean;
   termsAccepted: boolean;
   verificationCode?: string;
   verificationCodeExpires?: Date;
@@ -27,7 +29,7 @@ export interface IClient extends IUser {
   firstName: string;
   lastName: string;
   phone?: string;
-  location: LocationDetails;
+  location?: LocationDetails;
 }
 
 export interface IProvider extends IUser {
