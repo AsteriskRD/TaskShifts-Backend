@@ -2,11 +2,17 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { getCoordinates } from '../utils/geocode';
+import { generateToken } from '../middleware/auth';
 import { LocationDetails } from '../interfaces/user';
 import { UserModel, ClientModel, ProviderModel } from '../models/user';
 import sendVerificationEmail from '../services/verifyEmailService';
 import axios from 'axios';
 
+/**
+ * ======================================
+ *     REGISTER WITH EMAIL + PASSWORD
+ * ======================================
+ */
 export const register = async (req: Request, res: Response) => {
   try {
     const { email, password, confirmPassword, userType, firstName, lastName, phone, location, service, termsAccepted, availability } = req.body;
@@ -102,6 +108,84 @@ export const register = async (req: Request, res: Response) => {
 };
 
 
+/**
+ * ======================================
+ *       LOGIN WITH EMAIL + PASSWORD
+ * ======================================
+ */
+export const login = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required.',
+      });
+    }
+
+    // Find user by email
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with this email. Please sign up first.',
+      });
+    }
+
+    // Compare password using bcrypt
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials. Please try again.',
+      });
+    }
+
+    // Generate JWT token
+    const token = generateToken(user);
+
+    // Handle incomplete profile
+    if (!user.isProfileComplete) {
+      return res.status(200).json({
+        success: true,
+        message: 'Profile incomplete. Redirect to profile completion form.',
+        token,
+        data: {
+          email: user.email,
+          userType: user.userType,
+          isProfileComplete: false,
+        },
+      });
+    }
+
+    // Successful login
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful.',
+      token,
+      data: {
+        email: user.email,
+        userType: user.userType,
+        isProfileComplete: true,
+      },
+    });
+  } catch (error: any) {
+    console.error('Login Error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Login failed due to a server error.',
+      error: error.message,
+    });
+  }
+};
+
+
+/**
+ * ======================================
+ *       VERIFY EMAIL
+ * ======================================
+ */
 export const verifyEmail = async (req: Request, res: Response) => {
   try {
     const { email, verificationCode } = req.body;
