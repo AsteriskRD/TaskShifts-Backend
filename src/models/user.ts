@@ -17,7 +17,11 @@ const UserSchema: Schema = new Schema<IUser>({
   },
   passwordHash: {
     type: String,
-    required: true,
+  },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true,
   },
   userType: {
     type: String,
@@ -25,6 +29,10 @@ const UserSchema: Schema = new Schema<IUser>({
     required: true,
   },
   isVerified: {
+    type: Boolean,
+    default: false,
+  },
+  isProfileComplete: {
     type: Boolean,
     default: false,
   },
