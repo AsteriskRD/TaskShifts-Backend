@@ -1,87 +1,159 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
-import { ClientModel, UserModel } from '../models/user';
 import { generateToken } from '../middleware/auth';
+import { getCoordinates } from '../utils/geocode';
+import { UserModel, ClientModel, ProviderModel } from '../models/user';
 import { LocationDetails } from '../interfaces/user';
 
-export const googleAuth = async (req: Request, res: Response) => {
+const GOOGLE_TOKEN_INFO_URL = 'https://oauth2.googleapis.com/tokeninfo';
+
+/**
+ * ===============================
+ *   GOOGLE SIGNUP CONTROLLER
+ * ===============================
+ * Allows both clients and providers to sign up via Google.
+ * Requires `userType` in body.
+ */
+export const googleSignup = async (req: Request, res: Response) => {
   try {
-    const { googleToken, userType } = req.body;
+    const { token, userType } = req.body;
 
-    if (!googleToken) {
-      return res.status(400).json({ success: false, message: 'Missing Google token' });
-    }
-
-    // Verify token with Google
-    const googleResponse = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${googleToken}`);
-    const googleData = googleResponse.data;
-
-    const { email, sub: googleId, given_name: firstName, family_name: lastName } = googleData;
-
-    if (!email) {
-      return res.status(400).json({ success: false, message: 'Google account does not have a verified email' });
-    }
-
-    // Check if user already exists
-    let user = await UserModel.findOne({ $or: [{ email }, { googleId }] });
-
-    if (user) {
-      // Existing user
-      if (user.userType !== 'client') {
-        return res.status(403).json({ success: false, message: 'Only client accounts can login with Google' });
-      }
-
-      if (!user.isProfileComplete) {
-        const token = generateJwtToken(user);
-        return res.status(200).json({
-          success: true,
-          message: 'Profile incomplete. Redirect to profile form.',
-          token,
-          data: { email: user.email, isProfileComplete: false },
-        });
-      }
-
-      const token = generateToken(user.userId);
-      return res.status(200).json({
-        success: true,
-        message: 'Login successful',
-        data: { token, user },
+    if (!token || !userType) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing Google token or user type.',
       });
     }
 
-    // Create new client user if not found
-    const newClient = await ClientModel.create({
+    // Verify Google token
+    const googleRes = await axios.get(`${GOOGLE_TOKEN_INFO_URL}?id_token=${token}`);
+    const { email, sub: googleId, given_name: firstName, family_name: lastName, email_verified } = googleRes.data;
+
+    if (!email_verified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google account not verified.',
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await UserModel.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'Account with this Google email already exists. Please login instead.',
+      });
+    }
+
+    // Create new user (isProfileComplete = false)
+    const baseData = {
       email,
       googleId,
-      userType: 'client',
-      firstName: firstName || '',
-      lastName: lastName || '',
+      firstName,
+      lastName,
+      userType,
+      isVerified: true, // Google verified
       isProfileComplete: false,
-      isVerified: true,
-      location: {
-        address: '',
-        city: '',
-        country: '',
-        state: '',
-        postalCode: '',
-        coordinates: [0, 0] as [number, number],
-      } as LocationDetails,
-    });
+      termsAccepted: true,
+    };
 
-    const token = generateToken(newClient.userId);
+    const Model = userType === 'client' ? ClientModel : ProviderModel;
+    const newUser = await Model.create(baseData);
+
+    const jwtToken = generateToken(newUser);
 
     return res.status(201).json({
       success: true,
-      message: 'New Google client created. Redirect to profile form.',
-      data: { token, email: newClient.email, isProfileComplete: false },
+      message: 'Google signup successful. Complete your profile to continue.',
+      token: jwtToken,
+      data: {
+        email: newUser.email,
+        userType: newUser.userType,
+        isProfileComplete: newUser.isProfileComplete,
+      },
     });
-
   } catch (error: any) {
-    console.error('TaskShifts: Google Auth error:', error.message);
-    return res.status(500).json({
+    console.error('Google Signup Error:', error.response?.data || error.message);
+    res.status(500).json({
       success: false,
-      message: 'TaskShifts: Google authentication failed',
-      error: error.message,
+      message: 'Google signup failed.',
+      error: error.response?.data || error.message,
+    });
+  }
+};
+
+/**
+ * ===============================
+ *   GOOGLE LOGIN CONTROLLER
+ * ===============================
+ * Only logs in existing users.
+ * Does NOT auto-create users if email not found.
+ */
+export const googleLogin = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing Google token.',
+      });
+    }
+
+    // Verify token with Google
+    const googleRes = await axios.get(`${GOOGLE_TOKEN_INFO_URL}?id_token=${token}`);
+    const { email, email_verified } = googleRes.data;
+
+    if (!email_verified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google account not verified.',
+      });
+    }
+
+    // Check if user exists
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with this Google email. Please sign up first.',
+        signupRequired: true,
+      });
+    }
+
+    // Generate JWT
+    const jwtToken = generateToken(user);
+
+    // Handle profile completion
+    if (!user.isProfileComplete) {
+      return res.status(200).json({
+        success: true,
+        message: 'Profile incomplete. Redirect to profile form.',
+        token: jwtToken,
+        data: {
+          email: user.email,
+          userType: user.userType,
+          isProfileComplete: false,
+        },
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful.',
+      token: jwtToken,
+      data: {
+        email: user.email,
+        userType: user.userType,
+        isProfileComplete: true,
+      },
+    });
+  } catch (error: any) {
+    console.error('Google Login Error:', error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Google login failed.',
+      error: error.response?.data || error.message,
     });
   }
 };
