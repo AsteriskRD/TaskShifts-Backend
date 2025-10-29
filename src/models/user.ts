@@ -28,6 +28,10 @@ const UserSchema: Schema = new Schema<IUser>({
     type: Boolean,
     default: false,
   },
+  termsAccepted: {
+    type: Boolean,
+    default: true,
+  },
   verificationCode: {
     type: String,
   },
