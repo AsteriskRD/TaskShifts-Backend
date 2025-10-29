@@ -1,31 +1,64 @@
 import { Request, Response } from 'express';
-import { ClientModel } from '../models/user';
+import { ClientModel, ProviderModel, UserModel } from '../models/user';
 import { getCoordinates } from '../utils/geocode';
 import { LocationDetails } from '../interfaces/user';
 
 /**
- * POST /auth/complete-profile
- * Completes a Google user's profile by collecting their location and contact info.
+ * POST /api/profile/complete
+ * Completes a Google user's profile (client or provider) by collecting their contact and location info.
+ * - Works for both clients and providers.
+ * - Requires userType in body or fetched from DB.
  */
-export const completeClientProfile = async (req: Request, res: Response) => {
+export const completeProfile = async (req: Request, res: Response) => {
   try {
-    const { email, phone, address, city, country, state, postalCode } = req.body;
+    const {
+      email,
+      phone,
+      address,
+      city,
+      country,
+      state,
+      postalCode,
+      service,
+      availability,
+    } = req.body;
 
     if (!email) {
-      return res.status(400).json({ success: false, message: 'Email is required' });
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required to complete profile.',
+      });
     }
 
-    const client = await ClientModel.findOne({ email });
-    if (!client) {
-      return res.status(404).json({ success: false, message: 'Client not found' });
+    // Find user across all user types
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.',
+      });
     }
 
     // Skip if already complete
-    if (client.isProfileComplete) {
-      return res.status(200).json({ success: true, message: 'Profile already completed' });
+    if (user.isProfileComplete) {
+      return res.status(200).json({
+        success: true,
+        message: 'Profile already completed.',
+      });
     }
 
-    // Use OpenCage/Google fallback for coordinates
+    // Determine model (Client or Provider)
+    const Model = user.userType === 'provider' ? ProviderModel : ClientModel;
+    const fullUser = await Model.findOne({ email });
+
+    if (!fullUser) {
+      return res.status(404).json({
+        success: false,
+        message: `${user.userType} record not found.`,
+      });
+    }
+
+    // Get coordinates using OpenCage → Google fallback
     let coords = null;
     if (postalCode && country) {
       coords = await getCoordinates(postalCode, country);
@@ -37,30 +70,41 @@ export const completeClientProfile = async (req: Request, res: Response) => {
       country,
       state,
       postalCode,
-      coordinates: coords
-        ? [coords.longitude, coords.latitude]
-        : [0, 0],
+      coordinates: coords ? [coords.longitude, coords.latitude] : [0, 0],
     };
 
-    client.phone = phone;
-    client.location = location;
-    client.isProfileComplete = true;
-    await client.save();
+    // Assign updated data
+    fullUser.phone = phone;
+    fullUser.location = location;
+    fullUser.isProfileComplete = true;
+
+    // Provider-specific fields
+    if (fullUser.userType === 'provider') {
+      if (service) fullUser.service = service;
+      if (availability) fullUser.availability = availability;
+    }
+
+    await fullUser.save();
 
     return res.status(200).json({
       success: true,
-      message: 'Profile completed successfully',
+      message: `${fullUser.userType} profile completed successfully.`,
       data: {
-        email: client.email,
-        location: client.location,
-        phone: client.phone,
+        email: fullUser.email,
+        userType: fullUser.userType,
+        location: fullUser.location,
+        phone: fullUser.phone,
+        ...(fullUser.userType === 'provider' && {
+          service: fullUser.service,
+          availability: fullUser.availability,
+        }),
       },
     });
   } catch (error: any) {
     console.error('TaskShifts: Complete profile error:', error.message);
     return res.status(500).json({
       success: false,
-      message: 'TaskShifts: Failed to complete profile',
+      message: 'TaskShifts: Failed to complete profile.',
       error: error.message,
     });
   }
