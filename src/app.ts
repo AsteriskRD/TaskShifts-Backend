@@ -19,17 +19,29 @@ const io = new Server(httpServer, { cors: { origin: '*' } });
 // Middleware
 app.use(cors());
 app.use(express.json());
-//Globally applies JWT authentication to all routes except /register and /login
+
+// JWT Middleware (exclude public routes)
 app.use(expressjwt({
     secret: process.env.JWT_SECRET || 'secret',
     algorithms: ['HS256'] 
-  }).unless({ path: ['/api/users/register', '/api/users/login', '/health', '/api/users/verify-email'] })
+  }).unless(
+    {
+      path: [
+              '/api/users/register',
+              '/api/users/login',
+              '/api/google/signup',
+              '/api/google/login',
+              '/health',
+              '/api/users/verify-email'
+      ]
+    }
+  )
 );
 
 // Mount Routes
-app.use('/api/auth', authRoutes); // Mount the authRoutes
-app.use('/auth', googleAuthRoutes); // Mount the googleAuthRoutes
-app.use('/auth', profileRoutes); // Mount the profileRoutes
+app.use('/api/users', authRoutes); // Mount the authRoutes
+app.use('/api/google', googleAuthRoutes); // Mount the googleAuthRoutes
+app.use('/api/profile', profileRoutes); // Mount the profileRoutes
 
 
 // Health check
@@ -56,9 +68,10 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => console.log('Client disconnected'));
 });
 
-// Start server
+// Start server after DB connect
 const PORT = process.env.PORT || 3000;
-httpServer.listen(PORT, () => {
-  console.log(`TaskShifts server running on port ${PORT}`);
-  connectDB();
+connectDB().then(() => {
+  httpServer.listen(PORT, () => {
+    console.log(`TaskShifts server running on port ${PORT}`);
+  });
 });
