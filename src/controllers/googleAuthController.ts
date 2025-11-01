@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
-import { generateToken } from '../middleware/auth';
+import { generateAccessToken, generateRefreshToken } from '../middleware/auth';
 import { UserModel, ClientModel, ProviderModel } from '../models/user';
 import { LocationDetails } from '../interfaces/user';
 
@@ -120,15 +120,25 @@ export const googleLogin = async (req: Request, res: Response) => {
       });
     }
 
-    // Generate JWT
-    const jwtToken = generateToken(user);
+    // Generate tokens
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    // Send refresh token to HTTP-only cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      domain: process.env.COOKIE_DOMAIN,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 
     // Handle profile completion
     if (!user.isProfileComplete) {
       return res.status(200).json({
         success: true,
         message: 'Profile incomplete. Redirect to profile form.',
-        token: jwtToken,
+        accessToken,
         data: {
           email: user.email,
           userType: user.userType,
