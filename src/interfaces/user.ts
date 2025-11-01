@@ -1,6 +1,7 @@
 import { Document } from 'mongoose';
 
 export interface IUser extends Document {
+  _id: Types.ObjectId;
   userId: string;
   email: string;
   passwordHash?: string; // optional for Google users
@@ -12,15 +13,17 @@ export interface IUser extends Document {
   verificationCode?: string;
   verificationCodeExpires?: Date;
   isPremium: boolean; // For revenue features (subscriptions)
+  isKyc: boolean;
+  tokenVersion: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface LocationDetails {
-  address: string;
-  city: string;
-  country: string;
-  state: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  state?: string;
   postalCode?: string;
   coordinates?: [number, number]; // Longitude, latitude for geospatial matching
 }
@@ -37,12 +40,12 @@ export interface IProvider extends IUser {
   lastName: string;
   phone?: string;
   location?: LocationDetails;
-  service: {
-    serviceCategory: string;
-    registrationStatus: string;
-    businessName: string;
+  service?: {
+    serviceCategory?: string;
+    registrationStatus?: string;
+    businessName?: string;
     website?: string; // Optional per UI
-    serviceDescription: string;
+    serviceDescription?: string;
   };
   availability: boolean; // For matching available providers
 }
