@@ -246,7 +246,7 @@ export const logout = async (req: Request, res: Response) => {
     user.tokenVersion += 1;
     await user.save();
 
-    // Clear any HTTP-only refresh cookies (if you’re using cookies)
+    // Clear any HTTP-only refresh cookies
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
