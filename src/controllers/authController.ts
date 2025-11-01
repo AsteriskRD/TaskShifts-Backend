@@ -5,8 +5,7 @@ import { getCoordinates } from '../utils/geocode';
 import { generateToken } from '../middleware/auth';
 import { LocationDetails } from '../interfaces/user';
 import { UserModel, ClientModel, ProviderModel } from '../models/user';
-import sendVerificationEmail from '../services/verifyEmailService';
-import axios from 'axios';
+import { sendVerificationEmail } from '../services/verifyEmailService';
 
 /**
  * ======================================
