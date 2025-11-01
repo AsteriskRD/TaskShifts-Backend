@@ -23,7 +23,8 @@
       "axios",
       "nodemailer",
       "node-geocoder"
-    ]
+    ],
+    "typeRoots": ["./src/types", "./node_modules/@types"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
