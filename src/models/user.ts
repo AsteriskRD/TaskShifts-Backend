@@ -50,6 +50,14 @@ const UserSchema: Schema = new Schema<IUser>({
     type: Boolean,
     default: false,
   },
+  isKyc: {
+    type: Boolean,
+    default: false,
+  },
+  tokenVersion: {
+    type: Number,
+    default: 0,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
