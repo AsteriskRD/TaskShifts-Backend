@@ -215,3 +215,54 @@ export const verifyEmail = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+/**
+ * ===================================== 
+ * LOGOUT
+ * Securely logs out user by invalidating refresh tokens.
+ * ====================================
+ */
+export const logout = async (req: Request, res: Response) => {
+  try {
+    const id = (req.user as any)?.id;
+
+    if (!id) {
+      return res.status(401).json({
+        success: false,
+        message: 'TaskShifts: Unauthorized. Missing user ID.',
+      });
+    }
+
+    // Increment tokenVersion to invalidate existing refresh tokens
+    const user = await UserModel.findById({ id });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'TaskShifts: User not found',
+      });
+    }
+
+    user.tokenVersion += 1;
+    await user.save();
+
+    // Clear any HTTP-only refresh cookies (if you’re using cookies)
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'TaskShifts: Logged out successfully.',
+    });
+  } catch (error: any) {
+    console.error('TaskShifts Logout Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'TaskShifts: Logout failed',
+      error: error.message,
+    });
+  }
+};
