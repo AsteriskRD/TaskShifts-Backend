@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
 import { generateToken } from '../middleware/auth';
-import { getCoordinates } from '../utils/geocode';
 import { UserModel, ClientModel, ProviderModel } from '../models/user';
 import { LocationDetails } from '../interfaces/user';
 
