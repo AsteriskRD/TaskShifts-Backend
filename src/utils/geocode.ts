@@ -1,5 +1,5 @@
 import NodeGeocoder from 'node-geocoder';
-import PostalCache from '../models/PostalCache';
+import { PostalCache } from '../models/PostalCache';
 
 const openCage = NodeGeocoder({
   provider: 'opencage',
@@ -33,10 +33,11 @@ export async function getCoordinates(postalCode: string, country: string = 'CA')
   }
 
   // Try OpenCage
+  let confidence;
   try {
     const res = await openCage.geocode({ countryCode: country, zipcode: postalCode });
     if (res.length > 0 && res[0].latitude && res[0].longitude) {
-      const confidence = res[0].extra?.confidence || 0;
+      confidence = res[0].extra?.confidence || 0;
 
       // If confidence is high enough, accept it
       if (confidence >= 5) {
