@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { getCoordinates } from '../utils/geocode';
-import { generateToken } from '../middleware/auth';
+import { generateAccessToken, generateRefreshToken }  from '../middleware/auth';
 import { LocationDetails } from '../interfaces/user';
 import { UserModel, ClientModel, ProviderModel } from '../models/user';
 import { sendVerificationEmail } from '../services/verifyEmailService';
@@ -141,15 +141,25 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Generate JWT token
-    const token = generateToken(user);
+    // Generate tokens
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    // Send refresh token to HTTP-only cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      domain: process.env.COOKIE_DOMAIN,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 
     // Handle incomplete profile
     if (!user.isProfileComplete) {
       return res.status(200).json({
         success: true,
         message: 'Profile incomplete. Redirect to profile completion form.',
-        token,
+        accessToken,
         data: {
           email: user.email,
           userType: user.userType,
@@ -162,7 +172,7 @@ export const login = async (req: Request, res: Response) => {
     return res.status(200).json({
       success: true,
       message: 'Login successful.',
-      token,
+      accessToken,
       data: {
         email: user.email,
         userType: user.userType,
