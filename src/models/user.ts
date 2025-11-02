@@ -46,6 +46,12 @@ const UserSchema: Schema = new Schema<IUser>({
   verificationCodeExpires: {
     type: Date,
   },
+  resetPasswordToken: {
+    type: String,
+  },
+  resetPasswordExpires: {
+    type: Date,
+  },
   isPremium: {
     type: Boolean,
     default: false,
