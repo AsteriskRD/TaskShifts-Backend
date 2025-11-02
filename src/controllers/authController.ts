@@ -6,6 +6,7 @@ import { generateAccessToken, generateRefreshToken }  from '../middleware/auth';
 import { LocationDetails } from '../interfaces/user';
 import { UserModel, ClientModel, ProviderModel } from '../models/user';
 import { sendVerificationEmail } from '../services/verifyEmailService';
+import { sendPasswordResetEmail } from '../services/resetEmailService';
 
 /**
  * ======================================
@@ -14,13 +15,25 @@ import { sendVerificationEmail } from '../services/verifyEmailService';
  */
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, confirmPassword, userType, firstName, lastName, phone, location, service, termsAccepted, availability } = req.body;
+    const {
+      email, 
+      password, 
+      confirmPassword, 
+      userType, 
+      firstName, 
+      lastName, 
+      phone, 
+      location, 
+      service, 
+      termsAccepted, 
+      availability 
+    } = req.body;
 
     // Validation: Password match
     if (password !== confirmPassword) {
       return res.status(400).json({
         success: false,
-        message: "Passwords do not match",
+        message: "TaskShifts: Passwords do not match",
       });
     }
 
@@ -28,13 +41,13 @@ export const register = async (req: Request, res: Response) => {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid email format",
+        message: "TaskShifts: Invalid email format",
       });
     }
     if (password.length < 8) {
       return res.status(400).json({
         success: false,
-        message: "Password must be at least 8 characters",
+        message: "TaskShifts: Password must be at least 8 characters",
       });
     }
 
@@ -43,7 +56,7 @@ export const register = async (req: Request, res: Response) => {
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: "Email already registered",
+        message: "TaskShifts: Email already registered",
       });
     }
 
@@ -119,7 +132,7 @@ export const login = async (req: Request, res: Response) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required.',
+        message: 'TaskShifts: Email and password are required.',
       });
     }
 
@@ -128,7 +141,7 @@ export const login = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'No account found with this email. Please sign up first.',
+        message: 'TaskShifts: No account found with this email. Please sign up first.',
       });
     }
 
@@ -137,7 +150,7 @@ export const login = async (req: Request, res: Response) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials. Please try again.',
+        message: 'TaskShifts: Invalid credentials. Please try again.',
       });
     }
 
@@ -158,7 +171,7 @@ export const login = async (req: Request, res: Response) => {
     if (!user.isProfileComplete) {
       return res.status(200).json({
         success: true,
-        message: 'Profile incomplete. Redirect to profile completion form.',
+        message: 'TaskShifts: Profile incomplete. Redirect to profile completion form.',
         accessToken,
         data: {
           email: user.email,
@@ -171,7 +184,7 @@ export const login = async (req: Request, res: Response) => {
     // Successful login
     return res.status(200).json({
       success: true,
-      message: 'Login successful.',
+      message: 'TaskShifts: Login successful.',
       accessToken,
       data: {
         email: user.email,
@@ -183,7 +196,7 @@ export const login = async (req: Request, res: Response) => {
     console.error('Login Error:', error.message);
     return res.status(500).json({
       success: false,
-      message: 'Login failed due to a server error.',
+      message: 'TaskShifts: Login failed due to a server error.',
       error: error.message,
     });
   }
@@ -225,6 +238,155 @@ export const verifyEmail = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+/**
+ * ======================================
+ *     FORGOT PASSWORD
+ * ======================================
+ */
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "TaskShifts: User not found"
+      });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetTokenHash = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+    // Save hashed token and expiry
+    user.resetPasswordToken = resetTokenHash;
+    user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+    await user.save();
+
+    // Send email
+    await sendPasswordResetEmail(user.email, resetToken);
+
+    res.status(200).json({
+      success: true,
+      message: 'TaskShifts: Password reset link sent to your email'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'TaskShifts: Forgot Password failed',
+      error: "Server error"
+    });
+  }
+});
+
+
+/**
+ * ======================================
+ *     RESET PASSWORD
+ * ======================================
+ */
+export const resetPassword = async (req: Request, res: Response) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  try {
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: new Date() }, // not expired
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "TaskShifts: Invalid or expired token"
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: "TaskShifts: Password required"
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12); // 12 salt rounds
+
+    // Update password and clear reset fields
+    user.passwordHash = passwordHash;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "TaskShifts: Password reset successful"
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "TaskShifts: Reset password failed"
+      error: "Server error"
+    });
+  }
+});
+
+
+/**
+ * ======================================
+ *     CHANGE PASSWORD
+ * ======================================
+ */
+export const changePassword = async (req: Request, res: Response) => {
+  const { oldPassword, newPassword, confirmNewPassword } = req.body;
+  const id = (req as any).user.id;
+
+  try {
+
+    // Validation: Password match
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "TaskShifts: Passwords do not match",
+      });
+    } 
+    // Verify user
+    const user = await User.findById({ id });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "TaskShifts: User not found"
+      });
+    }
+    // Verify password
+    const isMatch = await bcrypt.compare(oldPassword, user.passwordHash);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "TaskShifts: Old password incorrect"
+      });
+    }
+    // Hash new password
+    const hashPassword = await bcrypt.hash(newPassword, 12); // 12 salt rounds
+    user.passwordHash = hashPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "TaskShifts: Password changed successfully"
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "TaskShifts: Change password failed",
+      error: "Server error"
+    });
+  }
+});
 
 
 /**
