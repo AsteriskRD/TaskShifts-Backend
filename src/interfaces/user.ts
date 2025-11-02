@@ -12,6 +12,8 @@ export interface IUser extends Document {
   termsAccepted: boolean;
   verificationCode?: string;
   verificationCodeExpires?: Date;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   isPremium: boolean; // For revenue features (subscriptions)
   isKyc: boolean;
   tokenVersion: number;
