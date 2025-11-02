@@ -12,6 +12,7 @@ export const sendVerificationEmail = async (email: string, verificationCode: str
       },
     });
 
+    // Construct verification link
     const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify?email=${encodeURIComponent(email)}&code=${verificationCode}`;
 
     const mailOptions = {
