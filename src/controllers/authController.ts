@@ -98,17 +98,27 @@ export const register = async (req: Request, res: Response) => {
       verificationCodeExpires,
     };
 
-    const Model = userType === 'client' ? ClientModel : ProviderModel;
-    const user = await Model.create(userData);
+    if (userType === 'client') {
+      const user = await (ClientModel as typeof ClientModel).create(userData);
 
-    // Send verification email
-    await sendVerificationEmail(email, verificationCode);
+      // Send verification email
+      await sendVerificationEmail(email, verificationCode);
 
-    res.status(201).json({
-      success: true,
-      message: 'TaskShifts: Registration successful. Check your email for verification link.',
-      data: { userId: user.userId, email: user.email },
-    });
+      res.status(201).json({
+        success: true,
+        message: 'TaskShifts: Registration successful. Check your email for verification link.',
+        data: { userId: user.userId, email: user.email },
+      });
+    } else {
+      const user = await (ProviderModel as typeof ProviderModel).create(userData);
+      // Send verification email
+      await sendVerificationEmail(email, verificationCode);
+      res.status(201).json({
+        success: true,
+        message: 'TaskShifts: Registration successful. Check your email for verification link.',
+        data: { userId: user.userId, email: user.email },
+      })
+    }        
   } catch (error) {
     console.error('TaskShifts: Registration error:', error);
     res.status(500).json({
@@ -249,7 +259,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
   const { email } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    const user = await UserModel.findOne({ email });
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -281,7 +291,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
       error: "Server error"
     });
   }
-});
+};
 
 
 /**
@@ -296,7 +306,7 @@ export const resetPassword = async (req: Request, res: Response) => {
   try {
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-    const user = await User.findOne({
+    const user = await UserModel.findOne({
       resetPasswordToken: hashedToken,
       resetPasswordExpires: { $gt: new Date() }, // not expired
     });
@@ -330,11 +340,11 @@ export const resetPassword = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "TaskShifts: Reset password failed"
+      message: "TaskShifts: Reset password failed",
       error: "Server error"
     });
   }
-});
+};
 
 
 /**
@@ -356,7 +366,7 @@ export const changePassword = async (req: Request, res: Response) => {
       });
     } 
     // Verify user
-    const user = await User.findById({ id });
+    const user = await UserModel.findById({ id });
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -386,7 +396,7 @@ export const changePassword = async (req: Request, res: Response) => {
       error: "Server error"
     });
   }
-});
+};
 
 
 /**
