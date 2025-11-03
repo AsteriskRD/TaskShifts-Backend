@@ -8,6 +8,7 @@ import {
   resetPassword,
   changePassword
 } from '../controllers/authController';
+import { verifyToken } from '../middleware/auth';
 
 const router = express.Router();
 
