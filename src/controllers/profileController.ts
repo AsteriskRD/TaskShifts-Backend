@@ -48,8 +48,13 @@ export const completeProfile = async (req: Request, res: Response) => {
     }
 
     // Determine model (Client or Provider)
-    const Model = user.userType === 'provider' ? ProviderModel : ClientModel;
-    const fullUser = await Model.findOne({ email });
+    let fullUser;
+
+    if (user.userType === 'provider') {
+      fullUser = await (ProviderModel as typeof ProviderModel).findOne({ email });
+    } else {
+      fullUser = await (ClientModel as typeof ClientModel).findOne({ email });
+    }
 
     if (!fullUser) {
       return res.status(404).json({
