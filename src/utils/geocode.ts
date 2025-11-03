@@ -1,16 +1,19 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import NodeGeocoder from 'node-geocoder';
-import { PostalCache } from '../models/PostalCache';
+import { PostalCache } from '../models/postalCache';
 
 const openCage = NodeGeocoder({
   provider: 'opencage',
   apiKey: process.env.OPENCAGE_API_KEY
 });
-
+/*
 const google = NodeGeocoder({
   provider: 'google',
   apiKey: process.env.GOOGLE_MAPS_API_KEY
 });
-
+*/
 /**
  * Get lat/lon for a postal code (global).
  * 1 Check cache in MongoDB
@@ -55,6 +58,7 @@ export async function getCoordinates(postalCode: string, country: string = 'CA')
 
   // Fallback to Google Maps
   console.warn(`Low confidence (${confidence}), using Google fallback...`);
+  /*
   try {
     const res = await google.geocode({ countryCode: country, zipcode: postalCode });
     if (res.length > 0 && res[0].latitude && res[0].longitude) {
@@ -68,6 +72,6 @@ export async function getCoordinates(postalCode: string, country: string = 'CA')
   } catch (err) {
     console.error('Google Geocode error:', err);
   }
-
+  */
   return null;
 }
