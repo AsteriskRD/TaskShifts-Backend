@@ -1,16 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { UserModel } from '../models/user';
 
+// Load secrets safely
 const JWT_SECRET = process.env.JWT_SECRET!;
 const REFRESH_SECRET = process.env.REFRESH_SECRET!;
 if (!JWT_SECRET || !REFRESH_SECRET) {
   throw new Error('JWT secrets are not properly set');
 }
 
+// ---------------------
 // TOKEN GENERATORS
+// ---------------------
 
-export const generateAccessToken = (user: { _id: Types.ObjectId; userType?: string }) => {
+export const generateAccessToken = (user: { _id: mongoose.Types.ObjectId; userType?: string }) => {
   const payload = { id: user._id.toString(), userType: user.userType };
   return jwt.sign(payload, JWT_SECRET, {
     algorithm: 'HS256',
@@ -18,7 +22,7 @@ export const generateAccessToken = (user: { _id: Types.ObjectId; userType?: stri
   });
 };
 
-export const generateRefreshToken = (user: { _id: Types.ObjectId; tokenVersion: number }) => {
+export const generateRefreshToken = (user: { _id: mongoose.Types.ObjectId; tokenVersion: number }) => {
   const payload = { id: user._id.toString(), tokenVersion: user.tokenVersion };
   return jwt.sign(payload, REFRESH_SECRET, {
     algorithm: 'HS256',
@@ -26,7 +30,17 @@ export const generateRefreshToken = (user: { _id: Types.ObjectId; tokenVersion: 
   });
 };
 
-// ACCESS TOKEN VERIFICATION MIDDLEWARE
+// ---------------------
+// VERIFY TOKEN MIDDLEWARE
+// ---------------------
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: JwtPayload & { id?: string; userType?: string };
+    }
+  }
+}
 
 export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
@@ -38,7 +52,7 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
 
   const token = parts[1];
   try {
-    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as JwtPayload;
     req.user = decoded;
     next();
   } catch (err: any) {
@@ -48,7 +62,9 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
   }
 };
 
-// REFRESH TOKEN ENDPOINT HANDLER
+// ---------------------
+// REFRESH TOKEN HANDLER
+// ---------------------
 
 export const refreshAccessToken = async (req: Request, res: Response) => {
   const { refreshToken } = req.body;
@@ -65,12 +81,12 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
       return res.status(403).json({ message: 'Token revoked. Please log in again.' });
 
     const newAccessToken = generateAccessToken({
-      userId: user._id.toString(),
+      _id: user._id,
       userType: user.userType,
     });
 
     const newRefreshToken = generateRefreshToken({
-      userId: user._id.toString(),
+      _id: user._id,
       tokenVersion: user.tokenVersion,
     });
 
