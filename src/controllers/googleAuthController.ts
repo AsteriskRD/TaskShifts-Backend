@@ -56,21 +56,35 @@ export const googleSignup = async (req: Request, res: Response) => {
       termsAccepted: true,
     };
 
-    const Model = userType === 'client' ? ClientModel : ProviderModel;
-    const newUser = await Model.create(baseData);
-
-    const jwtToken = generateToken(newUser);
-
-    return res.status(201).json({
-      success: true,
-      message: 'Google signup successful. Complete your profile to continue.',
-      token: jwtToken,
-      data: {
-        email: newUser.email,
-        userType: newUser.userType,
-        isProfileComplete: newUser.isProfileComplete,
-      },
-    });
+    if (userType === 'client') {
+      const newUser = await (ClientModel as typeof ClientModel).create(baseData);
+      // Generate access token
+      const jwtToken = generateAccessToken(newUser);
+      return res.status(201).json({
+        success: true,
+        message: 'Google signup successful. Complete your profile to continue.',
+        token: jwtToken,
+        data: {
+          email: newUser.email,
+          userType: newUser.userType,
+          isProfileComplete: newUser.isProfileComplete,
+        },
+      });
+    } else {
+      const newUser = await (ProviderModel as typeof ProviderModel).create(baseData);
+      // Generate access token
+      const jwtToken = generateAccessToken(newUser);
+      return res.status(201).json({
+        success: true,
+        message: 'Google signup successful. Complete your profile to continue.',
+        token: jwtToken,
+        data: {
+          email: newUser.email,
+          userType: newUser.userType,
+          isProfileComplete: newUser.isProfileComplete,
+        },
+      });
+    }
   } catch (error: any) {
     console.error('Google Signup Error:', error.response?.data || error.message);
     res.status(500).json({
@@ -150,7 +164,7 @@ export const googleLogin = async (req: Request, res: Response) => {
     return res.status(200).json({
       success: true,
       message: 'Login successful.',
-      token: jwtToken,
+      token: accessToken,
       data: {
         email: user.email,
         userType: user.userType,
