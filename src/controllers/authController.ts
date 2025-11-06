@@ -196,10 +196,26 @@ export const login = async (req: Request, res: Response) => {
       success: true,
       message: 'TaskShifts: Login successful.',
       accessToken,
-      data: {
+      user: {
+        userId: user.userId,
         email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
         userType: user.userType,
-        isProfileComplete: true,
+        isProfileComplete: user.isProfileComplete,
+        gender: user.gender,
+        phone: user.phone,
+        alternatePhone: user.alternatePhone,
+        dateOfBirth: user.dateOfBirth,
+        location: user.location,
+        ...(user.userType === 'provider' && { 
+          service: user.service,
+          availability: user.availability, 
+        }), 
+        isVerified: user.isVerified,
+        termsAccepted: user.termsAccepted,
+        isPremium: user.isPremium,
+        isKyc: user.isKyc,
       },
     });
   } catch (error: any) {
