@@ -34,6 +34,9 @@ export interface IClient extends IUser {
   firstName: string;
   lastName: string;
   phone?: string;
+  alternatePhone?: string;
+  gender?: string;
+  dateOfBirth?: Date;
   location?: LocationDetails;
 }
 
@@ -41,6 +44,9 @@ export interface IProvider extends IUser {
   firstName: string;
   lastName: string;
   phone?: string;
+  alternatePhone?: string;
+  gender?: string;
+  dateOfBirth?: Date;
   location?: LocationDetails;
   service?: {
     serviceCategory?: string;
