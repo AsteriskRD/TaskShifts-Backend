@@ -202,11 +202,11 @@ export const login = async (req: Request, res: Response) => {
         firstName: user.firstName,
         lastName: user.lastName,
         userType: user.userType,
-        isProfileComplete: user.isProfileComplete,
         gender: user.gender,
         phone: user.phone,
         alternatePhone: user.alternatePhone,
         dateOfBirth: user.dateOfBirth,
+        isProfileComplete: user.isProfileComplete,
         location: user.location,
         ...(user.userType === 'provider' && { 
           service: user.service,

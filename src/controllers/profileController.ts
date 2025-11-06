@@ -120,3 +120,79 @@ export const completeProfile = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+/**
+ * GET /api/profile/:email
+ * Fetches a user's profile details by email.
+ * Works for both clients and providers.
+ */
+export const getProfile = async (req: Request, res: Response) => {
+  try {
+    const id = (req.user as any)?.id;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'TaskShifts: Unauthorized. Missing user ID.',
+      });
+    }
+
+    // Find user across all user types
+    const user = await UserModel.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'TaskShifts: User not found.',
+      });
+    }
+
+    // Load full user record based on userType
+    let fullUser;
+    if (user.userType === 'provider') {
+      fullUser = await ProviderModel.findOne({ email: user.email });
+    } else {
+      fullUser = await ClientModel.findOne({ email: user.email });
+    }
+
+    if (!fullUser) {
+      return res.status(404).json({
+        success: false,
+        message: `TaskShifts: ${user.userType} record not found.`,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'TaskShifts: Profile retrieved successfully.',
+      user: {
+        userId: fullUser.userId,
+        email: fullUser.email,
+        firstName: fullUser.firstName,
+        lastName: fullUser.lastName,
+        userType: fullUser.userType,
+        gender: fullUser.gender,
+        phone: fullUser.phone,
+        alternatePhone: fullUser.alternatePhone,
+        dateOfBirth: fullUser.dateOfBirth,
+        location: fullUser.location,
+        isProfileComplete: fullUser.isProfileComplete,
+        isVerified: fullUser.isVerified,
+        termsAccepted: fullUser.termsAccepted,
+        isPremium: fullUser.isPremium,
+        isKyc: fullUser.isKyc,
+        ...(fullUser.userType === 'provider' && {
+          service: fullUser.service,
+          availability: fullUser.availability,
+        }),
+      },
+    });
+  } catch (error: any) {
+    console.error('TaskShifts: Get profile error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'TaskShifts: Failed to fetch profile.',
+      error: error.message,
+    });
+  }
+};
