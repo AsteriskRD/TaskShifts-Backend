@@ -14,6 +14,9 @@ export const completeProfile = async (req: Request, res: Response) => {
     const {
       email,
       phone,
+      alternatePhone,
+      gender,
+      dateOfBirth,
       address,
       city,
       country,
@@ -26,7 +29,7 @@ export const completeProfile = async (req: Request, res: Response) => {
     if (!email) {
       return res.status(400).json({
         success: false,
-        message: 'Email is required to complete profile.',
+        message: 'TaskShift: Email is required to complete profile.',
       });
     }
 
@@ -35,7 +38,7 @@ export const completeProfile = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found.',
+        message: 'TaskShift: User not found.',
       });
     }
 
@@ -43,7 +46,7 @@ export const completeProfile = async (req: Request, res: Response) => {
     if (user.isProfileComplete) {
       return res.status(200).json({
         success: true,
-        message: 'Profile already completed.',
+        message: 'TaskShift: Profile already completed.',
       });
     }
 
@@ -80,6 +83,9 @@ export const completeProfile = async (req: Request, res: Response) => {
 
     // Assign updated data
     fullUser.phone = phone;
+    fullUser.alternatePhone = alternatePhone || "";
+    fullUser.gender = gender;
+    fullUser.dateOfBirth = dateOfBirth;
     fullUser.location = location;
     fullUser.isProfileComplete = true;
 
@@ -93,7 +99,7 @@ export const completeProfile = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: `${fullUser.userType} profile completed successfully.`,
+      message: `TaskShift: ${fullUser.userType} profile completed successfully.`,
       data: {
         email: fullUser.email,
         userType: fullUser.userType,
