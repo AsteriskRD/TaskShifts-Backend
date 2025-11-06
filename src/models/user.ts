@@ -89,6 +89,9 @@ const ClientSchema: Schema = new Schema<IClient>({
   firstName: { type: String, required: true, trim: true },
   lastName: { type: String, required: true, trim: true },
   phone: { type: String, trim: true },
+  alternatePhone: { type: String, trim: true },
+  gender: { type: String, enum: ["Male", "Female", "Other", ""], default: "" },
+  dateOfBirth: { type: Date },
   location: LocationSchema,
 }, { discriminatorKey: 'userType' });
 
@@ -96,6 +99,9 @@ const ProviderSchema: Schema = new Schema<IProvider>({
   firstName: { type: String, required: true, trim: true },
   lastName: { type: String, required: true, trim: true },
   phone: { type: String, trim: true },
+  alternatePhone: { type: String, trim: true },
+  gender: { type: String, enum: ["Male", "Female", "Other", ""], default: "" },
+  dateOfBirth: { type: Date },
   service: {
     serviceCategory: { type: String, required: true },
     registrationStatus: { type: String, required: true },
