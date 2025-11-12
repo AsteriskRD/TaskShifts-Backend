@@ -36,7 +36,7 @@ app.use(expressjwt({
               '/api/users/verify-email',
               '/api/token/refresh-token',
               '/api/users/forgot-password',
-              '/api/users/reset-password'
+              /^\/api\/users\/reset-password\/.*/
       ]
     }
   )

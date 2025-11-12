@@ -186,7 +186,7 @@ export const login = async (req: Request, res: Response) => {
         data: {
           email: user.email,
           userType: user.userType,
-          isProfileComplete: user.isProfileComplete,,
+          isProfileComplete: user.isProfileComplete,
         },
       });
     }
@@ -399,7 +399,7 @@ export const changePassword = async (req: Request, res: Response) => {
       });
     } 
     // Verify user
-    const user = await UserModel.findById({ id });
+    const user = await UserModel.findById(id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -450,7 +450,7 @@ export const logout = async (req: Request, res: Response) => {
     }
 
     // Increment tokenVersion to invalidate existing refresh tokens
-    const user = await UserModel.findById({ id });
+    const user = await UserModel.findById(id);
     if (!user) {
       return res.status(404).json({
         success: false,
