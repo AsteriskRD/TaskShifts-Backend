@@ -186,7 +186,24 @@ export const login = async (req: Request, res: Response) => {
         data: {
           email: user.email,
           userType: user.userType,
-          isProfileComplete: false,
+          isProfileComplete: user.isProfileComplete,,
+        },
+      });
+    }
+
+    if (!user.isVerified) {
+      // Generate verification code
+      const verificationCode = crypto.randomBytes(3).toString('hex');
+      const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      // Send verification email
+      await sendVerificationEmail(user.email, verificationCode);
+      return res.status(403).json({
+        success: true,
+        message: 'TaskShifts: Email address not verified. verification link sent to your email.',
+        data: {
+          email: user.email,
+          userType: user.userType,
+          isVerified: user.isVerified,
         },
       });
     }
