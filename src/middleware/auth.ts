@@ -1,27 +1,102 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+import mongoose from 'mongoose';
+import { UserModel } from '../models/user';
 
-export const generateToken = (user: any) => {
+// Load secrets safely
+const JWT_SECRET = process.env.JWT_SECRET!;
+const REFRESH_SECRET = process.env.REFRESH_SECRET!;
+if (!JWT_SECRET || !REFRESH_SECRET) {
+  throw new Error('JWT secrets are not properly set');
+}
 
-  const JWT_SECRET = process.env.JWT_SECRET as string;
+// ---------------------
+// TOKEN GENERATORS
+// ---------------------
 
-  return jwt.sign(
-    { 
-      userId: user.userId,
-    },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  );
+export const generateAccessToken = (user: { _id: mongoose.Types.ObjectId; userType?: string }) => {
+  const payload = { id: user._id.toString(), userType: user.userType };
+  return jwt.sign(payload, JWT_SECRET, {
+    algorithm: 'HS256',
+    expiresIn: '15m',
+  });
 };
 
+export const generateRefreshToken = (user: { _id: mongoose.Types.ObjectId; tokenVersion: number }) => {
+  const payload = { id: user._id.toString(), tokenVersion: user.tokenVersion };
+  return jwt.sign(payload, REFRESH_SECRET, {
+    algorithm: 'HS256',
+    expiresIn: '7d',
+  });
+};
+
+// ---------------------
+// VERIFY TOKEN MIDDLEWARE
+// ---------------------
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: JwtPayload & { id?: string; userType?: string };
+    }
+  }
+}
+
 export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'TaskShifts: No token provided' });
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ message: 'No Authorization header' });
+
+  const parts = authHeader.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer')
+    return res.status(401).json({ message: 'Malformed Authorization header' });
+
+  const token = parts[1];
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as JwtPayload;
     req.user = decoded;
     next();
-  } catch (error) {
-    res.status(401).json({ message: 'TaskShifts: Invalid token' });
+  } catch (err: any) {
+    if (err.name === 'TokenExpiredError')
+      return res.status(401).json({ message: 'Access token expired' });
+    return res.status(401).json({ message: 'Invalid token' });
+  }
+};
+
+// ---------------------
+// REFRESH TOKEN HANDLER
+// ---------------------
+
+export const refreshAccessToken = async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken)
+    return res.status(400).json({ message: 'Refresh token required' });
+
+  try {
+    const decoded = jwt.verify(refreshToken, REFRESH_SECRET) as JwtPayload;
+    const user = await UserModel.findById(decoded.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // tokenVersion check → reject if revoked
+    if (user.tokenVersion !== decoded.tokenVersion)
+      return res.status(403).json({ message: 'Token revoked. Please log in again.' });
+
+    const newAccessToken = generateAccessToken({
+      _id: user._id,
+      userType: user.userType,
+    });
+
+    const newRefreshToken = generateRefreshToken({
+      _id: user._id,
+      tokenVersion: user.tokenVersion,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Access token refreshed',
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    });
+  } catch (err: any) {
+    return res.status(401).json({ message: 'Invalid or expired refresh token' });
   }
 };

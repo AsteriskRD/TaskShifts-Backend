@@ -7,6 +7,7 @@ import { expressjwt } from 'express-jwt';
 import authRoutes from './routes/authRoutes';
 import googleAuthRoutes from './routes/googleAuthRoutes';
 import profileRoutes from './routes/profileRoutes';
+import tokenRoutes from './routes/tokenRoutes';
 import kycRoutes from './routes/kycRoutes';
 
 
@@ -33,7 +34,10 @@ app.use(expressjwt({
               '/api/google/signup',
               '/api/google/login',
               '/health',
-              '/api/users/verify-email'
+              '/api/users/verify-email',
+              '/api/token/refresh-token',
+              '/api/users/forgot-password',
+              /^\/api\/users\/reset-password\/.*/
       ]
     }
   )
@@ -43,7 +47,6 @@ app.use(expressjwt({
 app.use('/api/users', authRoutes); // Mount the authRoutes
 app.use('/api/google', googleAuthRoutes); // Mount the googleAuthRoutes
 app.use('/api/profile', profileRoutes); // Mount the profileRoutes
-app.use('/api/kyc', kycRoutes); // Mount the kycRoutes
 
 
 // Health check

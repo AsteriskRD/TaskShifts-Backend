@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
-import { generateToken } from '../middleware/auth';
+import { generateAccessToken, generateRefreshToken } from '../middleware/auth';
 import { UserModel, ClientModel, ProviderModel } from '../models/user';
 import { LocationDetails } from '../interfaces/user';
 
@@ -20,7 +20,7 @@ export const googleSignup = async (req: Request, res: Response) => {
     if (!token || !userType) {
       return res.status(400).json({
         success: false,
-        message: 'Missing Google token or user type.',
+        message: 'TaskShifts: Missing Google token or user type.',
       });
     }
 
@@ -31,7 +31,7 @@ export const googleSignup = async (req: Request, res: Response) => {
     if (!email_verified) {
       return res.status(400).json({
         success: false,
-        message: 'Google account not verified.',
+        message: 'TaskShifts: Google account not verified.',
       });
     }
 
@@ -40,7 +40,7 @@ export const googleSignup = async (req: Request, res: Response) => {
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: 'Account with this Google email already exists. Please login instead.',
+        message: 'TaskShifts: Account with this Google email already exists. Please login instead.',
       });
     }
 
@@ -56,26 +56,40 @@ export const googleSignup = async (req: Request, res: Response) => {
       termsAccepted: true,
     };
 
-    const Model = userType === 'client' ? ClientModel : ProviderModel;
-    const newUser = await Model.create(baseData);
-
-    const jwtToken = generateToken(newUser);
-
-    return res.status(201).json({
-      success: true,
-      message: 'Google signup successful. Complete your profile to continue.',
-      token: jwtToken,
-      data: {
-        email: newUser.email,
-        userType: newUser.userType,
-        isProfileComplete: newUser.isProfileComplete,
-      },
-    });
+    if (userType === 'client') {
+      const newUser = await (ClientModel as typeof ClientModel).create(baseData);
+      // Generate access token
+      const jwtToken = generateAccessToken(newUser);
+      return res.status(201).json({
+        success: true,
+        message: 'TaskShifts: Google signup successful. Complete your profile to continue.',
+        token: jwtToken,
+        data: {
+          email: newUser.email,
+          userType: newUser.userType,
+          isProfileComplete: newUser.isProfileComplete,
+        },
+      });
+    } else {
+      const newUser = await (ProviderModel as typeof ProviderModel).create(baseData);
+      // Generate access token
+      const jwtToken = generateAccessToken(newUser);
+      return res.status(201).json({
+        success: true,
+        message: 'TaskShifts: Google signup successful. Complete your profile to continue.',
+        token: jwtToken,
+        data: {
+          email: newUser.email,
+          userType: newUser.userType,
+          isProfileComplete: newUser.isProfileComplete,
+        },
+      });
+    }
   } catch (error: any) {
     console.error('Google Signup Error:', error.response?.data || error.message);
     res.status(500).json({
       success: false,
-      message: 'Google signup failed.',
+      message: 'TaskShifts: Google signup failed.',
       error: error.response?.data || error.message,
     });
   }
@@ -95,7 +109,7 @@ export const googleLogin = async (req: Request, res: Response) => {
     if (!token) {
       return res.status(400).json({
         success: false,
-        message: 'Missing Google token.',
+        message: 'TaskShifts: Missing Google token.',
       });
     }
 
@@ -106,7 +120,7 @@ export const googleLogin = async (req: Request, res: Response) => {
     if (!email_verified) {
       return res.status(400).json({
         success: false,
-        message: 'Google account not verified.',
+        message: 'TaskShifts: Google account not verified.',
       });
     }
 
@@ -115,20 +129,30 @@ export const googleLogin = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'No account found with this Google email. Please sign up first.',
+        message: 'TaskShifts: No account found with this Google email. Please sign up first.',
         signupRequired: true,
       });
     }
 
-    // Generate JWT
-    const jwtToken = generateToken(user);
+    // Generate tokens
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    // Send refresh token to HTTP-only cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      domain: process.env.COOKIE_DOMAIN,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 
     // Handle profile completion
     if (!user.isProfileComplete) {
       return res.status(200).json({
         success: true,
-        message: 'Profile incomplete. Redirect to profile form.',
-        token: jwtToken,
+        message: 'TaskShifts: Profile incomplete. Redirect to profile form.',
+        accessToken,
         data: {
           email: user.email,
           userType: user.userType,
@@ -139,19 +163,35 @@ export const googleLogin = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Login successful.',
-      token: jwtToken,
-      data: {
+      message: 'TaskShifts: Login successful.',
+      token: accessToken,
+      user: {
+        userId: user.userId,
         email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
         userType: user.userType,
-        isProfileComplete: true,
+        isProfileComplete: user.isProfileComplete,
+        gender: user.gender,
+        phone: user.phone,
+        alternatePhone: user.alternatePhone,
+        dateOfBirth: user.dateOfBirth,
+        location: user.location,
+        ...(user.userType === 'provider' && { 
+          service: user.service,
+          availability: user.availability, 
+        }),
+        isVerified: user.isVerified,
+        termsAccepted: user.termsAccepted,
+        isPremium: user.isPremium,
+        isKyc: user.isKyc,
       },
     });
   } catch (error: any) {
     console.error('Google Login Error:', error.response?.data || error.message);
     res.status(500).json({
       success: false,
-      message: 'Google login failed.',
+      message: 'TaskShifts: Google login failed.',
       error: error.response?.data || error.message,
     });
   }
