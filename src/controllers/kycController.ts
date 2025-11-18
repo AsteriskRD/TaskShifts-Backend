@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import KycModel from "../models/kyc";
 import { uploadToCloudinary } from "./uploadController";
-import  multer from "multer";
 
 /**
  * ======================================
