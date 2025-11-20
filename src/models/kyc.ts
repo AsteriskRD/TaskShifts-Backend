@@ -7,6 +7,8 @@ const kycSchema = new Schema<IKyc>(
             firstName: { type: String, required: true, trim: true },
             lastName: { type: String, required: true, trim: true },
             phoneNumber: { type: String, required: true, trim: true  },
+            gender: { type: String, required: true, trim: true },
+            dateOfBirth: { type: Date, required: true },
             email: { type: String, required: true, trim: true, lowercase: true },   
             bio: { type: String, required: true, trim: true },
             imageUrl: { type: String, trim: true },

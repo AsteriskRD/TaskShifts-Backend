@@ -5,6 +5,8 @@ export interface IKyc extends Document {
         firstName?: string;
         lastName?: string;
         phoneNumber?: string;
+        gender?: string;
+        dateOfBirth?: Date; 
         email?: string;
         bio?: string;
         imageUrl?: string;
