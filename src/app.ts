@@ -8,6 +8,7 @@ import authRoutes from './routes/authRoutes';
 import googleAuthRoutes from './routes/googleAuthRoutes';
 import profileRoutes from './routes/profileRoutes';
 import kycRoutes from './routes/kycRoutes';
+import { reviewRoutes } from "./routes/reviewRoutes";
 
 
 // Load environment variables from .env
@@ -47,6 +48,7 @@ app.use('/api/users', authRoutes); // Mount the authRoutes
 app.use('/api/google', googleAuthRoutes); // Mount the googleAuthRoutes
 app.use('/api/profile', profileRoutes); // Mount the profileRoutes
 app.use('/api/kyc', kycRoutes); // Mount the kycRoutes
+app.use('/api/review', reviewRoutes); // Mount the reviewRoutes 
 
 
 // Health check
