@@ -7,7 +7,8 @@ import { expressjwt } from 'express-jwt';
 import authRoutes from './routes/authRoutes';
 import googleAuthRoutes from './routes/googleAuthRoutes';
 import profileRoutes from './routes/profileRoutes';
-import tokenRoutes from './routes/tokenRoutes';
+import kycRoutes from './routes/kycRoutes';
+import { reviewRoutes } from "./routes/reviewRoutes";
 
 
 // Load environment variables from .env
@@ -46,7 +47,8 @@ app.use(expressjwt({
 app.use('/api/users', authRoutes); // Mount the authRoutes
 app.use('/api/google', googleAuthRoutes); // Mount the googleAuthRoutes
 app.use('/api/profile', profileRoutes); // Mount the profileRoutes
-app.use('/api/token', tokenRoutes); // Mount the refresh token route
+app.use('/api/kyc', kycRoutes); // Mount the kycRoutes
+app.use('/api/review', reviewRoutes); // Mount the reviewRoutes 
 
 
 // Health check
