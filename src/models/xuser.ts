@@ -56,6 +56,10 @@ const UserSchema: Schema = new Schema<IUser>({
     type: Boolean,
     default: false,
   },
+  isKyc: {
+    type: Boolean,
+    default: false,
+  },
   tokenVersion: {
     type: Number,
     default: 0,
@@ -91,38 +95,6 @@ const ClientSchema: Schema = new Schema<IClient>({
   location: LocationSchema,
 }, { discriminatorKey: 'userType' });
 
-const ServiceRenderSubSchema: Schema = new Schema({
-  serviceType: { type: String },
-  category: { type: String },
-  subcategory: { type: String },
-  description: { type: String },
-  skills: [{
-    area: { type: String },
-    level: { type: String },
-    experience: { type: String }
-  }],
-  packages: [{
-    name: { type: String },
-    price: { type: Number },
-    currency: { type: String, default: 'NGN' },
-    deliveryTime: { type: String },
-    description: { type: String }
-  }],
-  portfolio: [{
-    filePath: { type: String }, // Cloudinary URL
-    skillLevel: { type: String },
-    experience: { type: String },
-    description: { type: String }
-  }],
-  additionalSettings: {
-    serviceDescription: { type: String },
-    cancellationPolicy: { type: String }
-  },
-  agreeToTerms: { type: Boolean, required: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
-
 const ProviderSchema: Schema = new Schema<IProvider>({
   firstName: { type: String, required: true, trim: true },
   lastName: { type: String, required: true, trim: true },
@@ -138,10 +110,6 @@ const ProviderSchema: Schema = new Schema<IProvider>({
     serviceDescription: { type: String, required: true },
   },
   availability: { type: Boolean, default: true },
-  bio: { type: String, trim: true }, // Added from KYC Step 1
-  profilePicture: { type: String }, // Added from KYC Step 1 (Cloudinary URL)
-  kycStatus: { type: String, enum: ["incomplete", "pending", "verified", "rejected"], default: "incomplete" }, // Added for detailed KYC tracking
-  servicesRender: { type: [ServiceRenderSubSchema], default: [] }, // Added array for multiple services
   location: LocationSchema,
 }, { discriminatorKey: 'userType' });
 

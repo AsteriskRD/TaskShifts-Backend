@@ -15,6 +15,7 @@ export interface IUser extends Document {
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   isPremium: boolean; // For revenue features (subscriptions)
+  isKyc: boolean;
   tokenVersion: number;
   createdAt: Date;
   updatedAt: Date;
@@ -55,25 +56,4 @@ export interface IProvider extends IUser {
     serviceDescription?: string;
   };
   availability: boolean; // For matching available providers
-  bio?: string; // Added from KYC Step 1
-  profilePicture?: string; // Added from KYC Step 1 (Cloudinary URL)
-  kycStatus?: 'incomplete' | 'pending' | 'verified' | 'rejected'; // Added for detailed KYC tracking
-  servicesRender?: IServiceRender[]; // Added array for multiple services (renamed to avoid conflict)
-}
-
-export interface IServiceRender {
-  serviceType: string;
-  category: string;
-  subcategory: string;
-  description: string;
-  skills: { area: string; level: string; experience: string }[];
-  packages: { name: string; price: number; currency: string; deliveryTime: string; description: string }[];
-  portfolio: { filePath: string; skillLevel: string; experience: string; description: string }[];
-  additionalSettings: {
-    serviceDescription: string;
-    cancellationPolicy: string;
-  };
-  agreeToTerms: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
 }
