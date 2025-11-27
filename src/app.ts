@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { expressjwt } from 'express-jwt';
+import { v2 as cloudinary } from 'cloudinary';
 // Routes imports here
 import authRoutes from './routes/authRoutes';
 import googleAuthRoutes from './routes/googleAuthRoutes';
@@ -22,13 +23,15 @@ const io = new Server(httpServer, { cors: { origin: '*' } });
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // important for file uploads
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Configure once at app startup (e.g., in app.ts)
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true, // recommended
 });
 
 // JWT Middleware (exclude public routes)
