@@ -1,11 +1,20 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IKycDocument extends Document {
-  providerId: Types.ObjectId;           // references the Provider (User._id)
-  documentType: 'businessRegistration' | 'proofOfAddress';
-  registrationNumber?: string;          // for business reg (e.g. CAC number)
-  fileUrl: string;                      // Cloudinary secure_url
-  filePublicId: string;                 // for deletion later if needed
+  providerId: Types.ObjectId;
+  documentType:
+    | 'businessRegistration'
+    | 'proofOfAddress'
+    | 'proofOfIdentity';
+  // Specific fields
+  businessRegistrationType?: string;  // for business
+  registrationNumber?: string;        // for business
+  proofOfAddressType?: string;        // e.g. "Utility Bill"
+  proofOfIdentityType?: string;       // for identity
+  idNumber?: string;                 // for identity
+  side?: 'front' | 'back';            // only for identity card
+  fileUrl: string;                    // Cloudinary URL
+  filePublicId: string;
   status: 'pending' | 'verified' | 'rejected';
   rejectionReason?: string;
   uploadedAt: Date;
@@ -21,10 +30,15 @@ const KycDocumentSchema = new Schema<IKycDocument>({
   },
   documentType: {
     type: String,
-    enum: ['businessRegistration', 'proofOfAddress'],
+    enum: ['businessRegistration', 'proofOfAddress', 'proofOfIdentity'],
     required: true,
   },
+  businessRegistrationType: { type: String },
   registrationNumber: { type: String },
+  proofOfAddressType: { type: String },
+  proofOfIdentityType: { type: String },
+  idNumber: { type: String },
+  side: { type: String, enum: ['front', 'back'] },
   fileUrl: { type: String, required: true },
   filePublicId: { type: String, required: true },
   status: {
