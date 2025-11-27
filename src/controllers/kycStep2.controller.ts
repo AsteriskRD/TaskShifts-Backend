@@ -1,9 +1,8 @@
-// src/controllers/kycStep2.controller.ts
 import { Request, Response } from 'express';
 import { ProviderModel } from '../models/user';
 import { KycDocumentModel } from '../models/kycDocument';
 import { uploadToCloudinary } from '../utils/cloudinary';
-import { KycStep2Dto } from '../dto/kyc-step2.dto';
+import { KycDocumentUploadDto } from '../dto/kyc-step2.dto';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import fs from 'fs/promises';
@@ -19,56 +18,89 @@ export const kycStep2 = async (req: Request, res: Response) => {
     }
 
     if (provider.kycStatus !== 'pending') {
-      return res.status(400).json({ message: 'Complete Step 1 first or KYC already submitted' });
+      return res.status(400).json({ message: 'Complete Step 1 first' });
     }
 
-    if (!req.file) {
-      return res.status(400).json({ message: 'Document file is required' });
+    // Accept multiple files: businessDoc, addressDoc, identityFront, identityBack
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    if (!files || Object.keys(files).length === 0) {
+      return res.status(400).json({ message: 'At least one document is required' });
     }
 
-    // Validate metadata
-    const dto = plainToInstance(KycStep2Dto, req.body);
-    const errors = await validate(dto);
-    if (errors.length > 0) {
-      return res.status(400).json({ message: 'Validation failed', errors });
+    const uploaded: any[] = [];
+
+    // Helper to upload one file
+    const processFile = async (file: Express.Multer.File, dto: KycDocumentUploadDto) => {
+      const result = await uploadToCloudinary(file.path, `kyc/documents/${provider._id}`);
+      
+      const doc = new KycDocumentModel({
+        providerId: provider._id,
+        documentType: dto.documentType,
+        businessRegistrationType: dto.businessRegistrationType,
+        registrationNumber: dto.registrationNumber,
+        proofOfAddressType: dto.proofOfAddressType,
+        proofOfIdentityType: dto.proofOfIdentityType,
+        idNumber: dto.idNumber,
+        side: dto.side,
+        fileUrl: result.secure_url,
+        filePublicId: result.public_id,
+      });
+
+      await doc.save();
+      uploaded.push({ type: dto.documentType, side: dto.side, url: result.secure_url });
+
+      // Cleanup
+      await fs.unlink(file.path).catch(() => {});
+    };
+
+    // Parse metadata (sent as JSON array in "documents" field)
+    const documents: KycDocumentUploadDto[];
+    try {
+      documents = JSON.parse(req.body.documents);
+    } catch {
+      return res.status(400).json({ message: 'Invalid documents metadata' });
     }
 
-    // Upload to Cloudinary
-    const result = await uploadToCloudinary(
-      req.file.path,
-      `kyc/documents/${provider._id}`
-    );
-
-    // Save document record
-    const kycDoc = new KycDocumentModel({
-      providerId: provider._id,
-      documentType: dto.documentType,
-      registrationNumber: dto.registrationNumber?.trim() || undefined,
-      fileUrl: result.secure_url,
-      filePublicId: result.public_id,
-    });
-
-    await kycDoc.save();
-
-    // Cleanup temp file
-    await fs.unlink(req.file.path).catch(() => {});
-
-    // Check if both documents are now uploaded → auto-advance status if you want
-    const docsCount = await KycDocumentModel.countDocuments({ providerId: provider._id });
-    if (docsCount >= 2) {
-      provider.kycStatus = 'pending'; // stays pending until admin verifies, or change to 'verified' if auto-approve
+    if (documents.length !== Object.keys(files).length) {
+      return res.status(400).json({ message: 'File count mismatch' });
     }
 
-    await provider.save();
+    // Match files to metadata and upload
+    for (const dto of documents) {
+      let fileArray;
+      if (dto.documentType === 'businessRegistration') fileArray = files.businessDoc;
+      else if (dto.documentType === 'proofOfAddress') fileArray = files.addressDoc;
+      else if (dto.documentType === 'proofOfIdentity' && dto.side === 'front') fileArray = files.identityFront;
+      else if (dto.documentType === 'proofOfIdentity' && dto.side === 'back') fileArray = files.identityBack;
+
+      const file = fileArray?.[0];
+      if (!file) {
+        return res.status(400).json({ message: `Missing file for ${dto.documentType} ${dto.side || ''}` });
+      }
+
+      // Validate each DTO
+      const instance = plainToInstance(KycDocumentUploadDto, dto);
+      const errors = await validate(instance);
+      if (errors.length > 0) return res.status(400).json({ message: 'Validation error', errors });
+
+      await processFile(file, dto);
+    }
+
+    // Optional: auto-advance status when all 3 types are present
+    const types = await KycDocumentModel.distinct('documentType', { providerId: provider._id });
+    if (types.length >= 3) {
+      provider.kycStatus = 'pending';
+      await provider.save();
+    }
 
     return res.status(200).json({
-      message: 'Document uploaded successfully',
-      documentType: kycDoc.documentType,
-      fileUrl: kycDoc.fileUrl,
+      message: 'All documents uploaded successfully',
+      uploaded,
       kycStatus: provider.kycStatus,
     });
+
   } catch (error) {
     console.error('KYC Step 2 error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
