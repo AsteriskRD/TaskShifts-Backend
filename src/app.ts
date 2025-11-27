@@ -9,6 +9,8 @@ import googleAuthRoutes from './routes/googleAuthRoutes';
 import profileRoutes from './routes/profileRoutes';
 import kycStep1Routes from './routes/kycStep1.routes';
 import kycStep2Routes from './routes/kycStep2.routes';
+import kycStep3Routes from './routes/kycStep3.routes';
+import searchRoutes from './routes/search.routes';
 
 
 // Load environment variables from .env
@@ -21,6 +23,13 @@ const io = new Server(httpServer, { cors: { origin: '*' } });
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Configure once at app startup (e.g., in app.ts)
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // JWT Middleware (exclude public routes)
 app.use(expressjwt({
@@ -44,11 +53,13 @@ app.use(expressjwt({
 );
 
 // Mount Routes
-app.use('/api/users', authRoutes); // Mount the authRoutes
+app.use('/api/users', authRoutes);        // Mount the authRoutes
 app.use('/api/google', googleAuthRoutes); // Mount the googleAuthRoutes
-app.use('/api/profile', profileRoutes); // Mount the profileRoutes
-app.use('/api/kyc', kycStep1Routes); // Mount the kyc step 1
-app.use('/api/kyc', kycStep2Routes); // Mount the kyc step 2
+app.use('/api/profile', profileRoutes);   // Mount the profileRoutes
+app.use('/api/kyc', kycStep1Routes);      // Mount the kyc step 1
+app.use('/api/kyc', kycStep2Routes);      // Mount the kyc step 2
+app.use('/api/kyc', kycStep3Routes);      // Mount the kyc step 3
+app.use('/api/search', searchRoutes);     // Mount the search routes
 
 
 // Health check
