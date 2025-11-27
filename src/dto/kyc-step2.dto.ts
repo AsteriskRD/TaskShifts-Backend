@@ -1,10 +1,30 @@
-import { IsString, IsOptional, IsIn } from 'class-validator';
+import { IsString, IsIn, IsOptional, IsEnum } from 'class-validator';
 
-export class KycStep2Dto {
-  @IsIn(['businessRegistration', 'proofOfAddress'])
-  documentType: 'businessRegistration' | 'proofOfAddress';
+export class KycDocumentUploadDto {
+  @IsIn(['businessRegistration', 'proofOfAddress', 'proofOfIdentity'])
+  documentType: 'businessRegistration' | 'proofOfAddress' | 'proofOfIdentity';
 
-  @IsString()
   @IsOptional()
-  registrationNumber?: string; // only required for business registration in frontend if you want
+  @IsString()
+  businessRegistrationType?: string; 
+
+  @IsOptional()
+  @IsString()
+  registrationNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  proofOfAddressType?: string;
+
+  @IsOptional()
+  @IsString()
+  proofOfIdentityType?: string;
+
+  @IsOptional()
+  @IsString()
+  idNumber?: string;
+
+  @IsOptional()
+  @IsEnum(['front', 'back'])
+  side?: 'front' | 'back'; // only used for proofOfIdentity
 }
