@@ -104,7 +104,7 @@ const ServiceRenderSubSchema: Schema = new Schema({
   packages: [{
     name: { type: String },
     price: { type: Number },
-    currency: { type: String, default: 'NGN' },
+    currency: { type: String, default: '' },
     deliveryTime: { type: String },
     description: { type: String }
   }],
