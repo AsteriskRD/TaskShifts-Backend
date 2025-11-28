@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import { UserModel } from '../models/user';
+import { findUserById } from '../utils/userUtils';
 
 // Load secrets safely
 const JWT_SECRET = process.env.JWT_SECRET!;
@@ -73,7 +73,7 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
 
   try {
     const decoded = jwt.verify(refreshToken, REFRESH_SECRET) as JwtPayload;
-    const user = await UserModel.findById(decoded.id);
+    const user = await findUserById(decoded.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // tokenVersion check → reject if revoked

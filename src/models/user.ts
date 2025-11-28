@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { IUser, IClient, IProvider, LocationDetails } from '../interfaces/user';
+import { IUser, IClient, IProvider, LocationDetails, IServiceRender } from '../interfaces/user';
 
 const UserSchema: Schema = new Schema<IUser>({
   userId: {
@@ -91,7 +91,7 @@ const ClientSchema: Schema = new Schema<IClient>({
   location: LocationSchema,
 }, { discriminatorKey: 'userType' });
 
-const ServiceRenderSubSchema: Schema = new Schema({
+const ServiceRenderSubSchema: Schema = new Schema<IServiceRender>({
   serviceType: { type: String },
   category: { type: String },
   subcategory: { type: String },
