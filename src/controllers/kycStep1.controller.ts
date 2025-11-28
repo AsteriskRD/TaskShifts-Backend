@@ -4,13 +4,14 @@ import { uploadToCloudinary } from '../utils/cloudinary';
 import { KycStep1Dto } from '../dto/kyc-step1.dto';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
+import { findProviderById } from '../utils/userUtils';
 
 export const kycStep1 = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const provider = await ProviderModel.findById(userId);
+    const provider = await findProviderById(userId);
     if (!provider) {
       return res.status(404).json({ message: 'Provider not found' });
     }
