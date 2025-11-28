@@ -6,13 +6,14 @@ import { KycDocumentUploadDto } from '../dto/kyc-step2.dto';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import fs from 'fs/promises';
+import { findProviderById } from '../utils/userUtils';
 
 export const kycStep2 = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const provider = await ProviderModel.findById(userId);
+    const provider = await findProviderById(userId);
     if (!provider || provider.userType !== 'provider') {
       return res.status(404).json({ message: 'Provider not found' });
     }
@@ -54,7 +55,7 @@ export const kycStep2 = async (req: Request, res: Response) => {
     };
 
     // Parse metadata (sent as JSON array in "documents" field)
-    const documents: KycDocumentUploadDto[];
+    let documents: KycDocumentUploadDto[];
     try {
       documents = JSON.parse(req.body.documents);
     } catch {
