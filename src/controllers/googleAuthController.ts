@@ -3,6 +3,7 @@ import axios from 'axios';
 import { generateAccessToken, generateRefreshToken } from '../middleware/auth';
 import { UserModel, ClientModel, ProviderModel } from '../models/user';
 import { LocationDetails } from '../interfaces/user';
+import { findUserByEmail } from '../utils/userUtils';
 
 const GOOGLE_TOKEN_INFO_URL = 'https://oauth2.googleapis.com/tokeninfo';
 
@@ -36,7 +37,7 @@ export const googleSignup = async (req: Request, res: Response) => {
     }
 
     // Check if user already exists
-    const existingUser = await UserModel.findOne({ email });
+    const existingUser = await findUserByEmail(email);
     if (existingUser) {
       return res.status(409).json({
         success: false,
@@ -125,7 +126,7 @@ export const googleLogin = async (req: Request, res: Response) => {
     }
 
     // Check if user exists
-    const user = await UserModel.findOne({ email });
+    const user = await findUserByEmail(email);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -179,12 +180,12 @@ export const googleLogin = async (req: Request, res: Response) => {
         location: user.location,
         ...(user.userType === 'provider' && { 
           service: user.service,
-          availability: user.availability, 
+          availability: user.availability,
+          kycStatus: user.kycStatus,
         }),
         isVerified: user.isVerified,
         termsAccepted: user.termsAccepted,
         isPremium: user.isPremium,
-        isKyc: user.isKyc,
       },
     });
   } catch (error: any) {
