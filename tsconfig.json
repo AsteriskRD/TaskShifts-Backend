@@ -10,6 +10,9 @@
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false,
     "types": [
       "node",
       "cors",
