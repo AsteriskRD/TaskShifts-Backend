@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { Server } from 'socket.io';
