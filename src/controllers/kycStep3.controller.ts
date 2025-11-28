@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ProviderModel } from '../models/user';
 import { uploadToCloudinary } from '../utils/cloudinary';
 import fs from 'fs/promises';
+import { findProviderById } from '../utils/userUtils';
 
 interface IServiceInput {
   serviceType: string;
@@ -34,7 +35,7 @@ export const kycStep3 = async (req: Request, res: Response) => {
     const userId = (req as any).user?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const provider = await ProviderModel.findById(userId);
+    const provider = await findProviderById(userId);
     if (!provider || provider.userType !== 'provider')
       return res.status(404).json({ message: 'Provider not found' });
 
