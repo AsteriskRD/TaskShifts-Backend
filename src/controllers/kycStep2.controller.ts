@@ -90,7 +90,15 @@ export const kycStep2 = async (req: Request, res: Response) => {
     // Optional: auto-advance status when all 3 types are present
     const types = await KycDocumentModel.distinct('documentType', { providerId: provider._id });
     if (types.length >= 3) {
+
       provider.kycStatus = 'pending';
+
+      provider.kycProgress = {
+        ...provider.kycProgress,
+        currentStep: 3,
+        step2Completed: true,
+      };
+
       await provider.save();
     }
 
