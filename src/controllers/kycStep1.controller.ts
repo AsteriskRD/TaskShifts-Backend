@@ -52,6 +52,12 @@ export const kycStep1 = async (req: Request, res: Response) => {
 
     // Move KYC forward
     provider.kycStatus = 'pending';
+    provider.kycProgress = {
+      currentStep: 2,
+      step1Completed: true,
+      step2Completed: false,
+      step3Completed: false,
+    };
 
     await provider.save();
 
