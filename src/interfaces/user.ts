@@ -56,6 +56,13 @@ export interface IServiceRender {
   updatedAt?: Date;
 }
 
+export interface IKycProgress {
+  currentStep: 1 | 2 | 3;
+  step1Completed: boolean;
+  step2Completed: boolean;
+  step3Completed: boolean;
+}
+
 export interface IProvider extends IUser {
   firstName: string;
   lastName: string;
@@ -75,6 +82,7 @@ export interface IProvider extends IUser {
   bio?: string; // Added from KYC Step 1
   profilePicture?: string; // Added from KYC Step 1 (Cloudinary URL)
   kycStatus?: 'incomplete' | 'pending' | 'verified' | 'rejected'; // Added for detailed KYC tracking
+  kycProgress: IKycProgress;
   servicesRender: IServiceRender[]; // Added array for multiple services (renamed to avoid conflict)
 }
 
