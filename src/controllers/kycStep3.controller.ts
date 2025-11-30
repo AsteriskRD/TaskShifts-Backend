@@ -91,6 +91,13 @@ export const kycStep3 = async (req: Request, res: Response) => {
 
     // Finalize KYC
     provider.kycStatus = 'verified';
+
+    provider.kycProgress = {
+      ...provider.kycProgress,
+      currentStep: 3,
+      step3Completed: true,
+    };
+
     await provider.save();
 
     return res.status(200).json({
