@@ -1,11 +1,15 @@
 import { Request, Response } from 'express';
 import { ProviderModel } from '../models/user';
 import { uploadToCloudinary } from '../utils/cloudinary';
+import fs from 'fs/promises';
+import { v2 as cloudinary } from 'cloudinary';
 import { KycStep1Dto } from '../dto/kyc-step1.dto';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { findProviderById } from '../utils/userUtils';
 
+
+// POST - Create kyc step 1 datas
 export const kycStep1 = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
@@ -74,4 +78,88 @@ export const kycStep1 = async (req: Request, res: Response) => {
     console.error('KYC Step 1 error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
+};
+
+
+// GET — Return Step 1 data (for editing)
+export const getKycStep1Data = async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  const provider = await findProviderById(userId);
+
+  if (!provider) return res.status(404).json({ message: 'Provider not found' });
+
+  // Can only edit if not yet verified
+  if (provider.kycStatus === 'verified') {
+    return res.status(403).json({ message: 'Cannot edit after verification' });
+  }
+
+  return res.json({
+    success: true,
+    data: {
+      firstName: provider.firstName,
+      lastName: provider.lastName,
+      phone: provider.phone,
+      gender: provider.gender,
+      dateOfBirth: provider.dateOfBirth,
+      bio: provider.bio,
+      profilePicture: provider.profilePicture,
+    },
+  });
+};
+
+
+// PATCH — Update Step 1 data from any step
+export const updateKycStep1Data = async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  const provider = await findProviderById(userId);
+
+  if (!provider) return res.status(404).json({ message: 'Provider not found' });
+  if (provider.kycStatus === 'verified') {
+    return res.status(403).json({ message: 'Cannot edit after verification' });
+  }
+
+  const { firstName, lastName, phone, gender, dateOfBirth, bio } = req.body;
+
+  // Handle text fields
+  if (firstName) provider.firstName = firstName;
+  if (lastName) provider.lastName = lastName;
+  if (phone) provider.phone = phone;
+  if (gender) provider.gender = gender;
+  if (dateOfBirth) provider.dateOfBirth = new Date(dateOfBirth);
+  if (bio !== undefined) provider.bio = bio || '';
+
+  // Handle profile picture upload (optional)
+  if (req.file) {
+    try {
+      // Delete old picture from Cloudinary if exists
+      if (provider.profilePicture) {
+        const publicId = provider.profilePicture.split('/').pop()?.split('.')[0];
+        if (publicId) {
+          await cloudinary.uploader.destroy(`kyc/profiles/${publicId}`);
+        }
+      }
+
+      // Upload new one
+      const result = await uploadToCloudinary(req.file.path, 'kyc/profiles');
+      provider.profilePicture = result.secure_url;
+
+      // Clean up temp file
+      await fs.unlink(req.file.path).catch(() => {});
+    } catch (error) {
+      console.error('Profile picture upload failed:', error);
+      return res.status(500).json({ message: 'Failed to update profile picture' });
+    }
+  }
+
+  await provider.save();
+
+  return res.json({
+    success: true,
+    message: 'Profile updated successfully',
+    data: {
+      profilePicture: provider.profilePicture,
+      firstName: provider.firstName,
+      // ... other fields
+    },
+  });
 };
