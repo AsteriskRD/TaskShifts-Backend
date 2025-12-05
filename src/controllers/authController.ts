@@ -5,7 +5,7 @@ import { getCoordinates } from '../utils/geocode';
 import { generateAccessToken, generateRefreshToken }  from '../middleware/auth';
 import { LocationDetails } from '../interfaces/user';
 import { UserModel, ClientModel, ProviderModel } from '../models/user';
-import { verifyEmailTemplate } from "../emailTemplates/emailTemplate";
+import { verifyEmailTemplate } from "../emailTemplates/verificationTemplates";
 import { resetEmailTemplate } from "../emailTemplates/resetTemplates";
 import { sendEmail } from "../utils/sendEmail";
 import {
