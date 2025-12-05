@@ -13,6 +13,7 @@ import kycStep1Routes from './routes/kycStep1.routes';
 import kycStep2Routes from './routes/kycStep2.routes';
 import kycStep3Routes from './routes/kycStep3.routes';
 import searchRoutes from './routes/search.routes';
+import tokenRoutes from './routes/tokenRoutes';
 
 
 // Load environment variables from .env
@@ -64,6 +65,8 @@ app.use('/api/kyc', kycStep1Routes);      // Mount the kyc step 1
 app.use('/api/kyc', kycStep2Routes);      // Mount the kyc step 2
 app.use('/api/kyc', kycStep3Routes);      // Mount the kyc step 3
 app.use('/api/search', searchRoutes);     // Mount the search routes
+app.use('/api/profile', profileRoutes); // Mount the profileRoutes
+app.use('/api/token', tokenRoutes); // Mount the refresh token route
 
 
 // Health check
