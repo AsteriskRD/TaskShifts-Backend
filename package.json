@@ -29,6 +29,7 @@
     "nodemailer": "^7.0.10",
     "redis": "^5.8.3",
     "reflect-metadata": "^0.2.2",
+    "resend": "^6.5.2",
     "socket.io": "^4.8.1",
     "tsup": "^8.5.1"
   },
