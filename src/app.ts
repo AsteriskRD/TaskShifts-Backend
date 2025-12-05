@@ -24,7 +24,28 @@ const httpServer = require('http').createServer(app);
 const io = new Server(httpServer, { cors: { origin: '*' } });
 
 // Middleware
-app.use(cors());
+// app.use(cors());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. Postman, mobile apps)
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins =
+        process.env.NODE_ENV === "production"
+          ? ["https://taskshifts.com"]
+          : ["http://localhost:3000"];
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json({ limit: '10mb' })); // important for file uploads
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
