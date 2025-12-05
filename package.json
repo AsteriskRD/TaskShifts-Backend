@@ -28,7 +28,8 @@
     "nodemailer": "^7.0.10",
     "redis": "^5.8.3",
     "reflect-metadata": "^0.2.2",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "tsup": "^8.5.1"
   },
   "devDependencies": {
     "@types/axios": "^0.14.4",
@@ -43,7 +44,6 @@
     "@types/redis": "^4.0.11",
     "@types/socket.io": "^3.0.2",
     "ts-node-dev": "^2.0.0",
-    "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   }
 }
