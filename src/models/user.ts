@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { IUser, IClient, IProvider, LocationDetails } from '../interfaces/user';
+import { IUser, IClient, IProvider, LocationDetails, IServiceRender, IKycProgress } from '../interfaces/user';
 
 const UserSchema: Schema = new Schema<IUser>({
   userId: {
@@ -56,10 +56,6 @@ const UserSchema: Schema = new Schema<IUser>({
     type: Boolean,
     default: false,
   },
-  isKyc: {
-    type: Boolean,
-    default: false,
-  },
   tokenVersion: {
     type: Number,
     default: 0,
@@ -90,17 +86,61 @@ const ClientSchema: Schema = new Schema<IClient>({
   lastName: { type: String, required: true, trim: true },
   phone: { type: String, trim: true },
   alternatePhone: { type: String, trim: true, default: "" },
-  gender: { type: String, enum: ["Male", "Female", "Other", ""], default: "" },
+  gender: { type: String, enum: ["Male", "Female", "Other", "Prefer not to say", ""], default: "" },
   dateOfBirth: { type: Date, default: null },
   location: LocationSchema,
 }, { discriminatorKey: 'userType' });
+
+const ServiceRenderSubSchema: Schema = new Schema<IServiceRender>({
+  serviceType: { type: String },
+  category: { type: String },
+  subcategory: { type: String },
+  description: { type: String },
+  skills: [{
+    area: { type: String },
+    level: { type: String },
+    experience: { type: String }
+  }],
+  packages: [{
+    name: { type: String },
+    price: { type: Number },
+    currency: { type: String, default: '' },
+    deliveryTime: { type: String },
+    description: { type: String }
+  }],
+  portfolio: [{
+    filePath: { type: String }, // Cloudinary URL
+    skillLevel: { type: String },
+    experience: { type: String },
+    description: { type: String }
+  }],
+  additionalSettings: {
+    serviceDescription: { type: String },
+    cancellationPolicy: { type: String }
+  },
+  agreeToTerms: { type: Boolean, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const kycProgressSchema = new Schema<IKycProgress>({
+  currentStep: {
+    type: Number,
+    enum: [1, 2, 3],
+    default: 1,
+    required: true,
+  },
+  step1Completed: { type: Boolean, default: false },
+  step2Completed: { type: Boolean, default: false },
+  step3Completed: { type: Boolean, default: false },
+});
 
 const ProviderSchema: Schema = new Schema<IProvider>({
   firstName: { type: String, required: true, trim: true },
   lastName: { type: String, required: true, trim: true },
   phone: { type: String, trim: true },
   alternatePhone: { type: String, trim: true, default: "" },
-  gender: { type: String, enum: ["Male", "Female", "Other", ""], default: "" },
+  gender: { type: String, enum: ["Male", "Female", "Other", "Prefer not to say", ""], default: "" },
   dateOfBirth: { type: Date, default: null },
   service: {
     serviceCategory: { type: String, required: true },
@@ -110,6 +150,19 @@ const ProviderSchema: Schema = new Schema<IProvider>({
     serviceDescription: { type: String, required: true },
   },
   availability: { type: Boolean, default: true },
+  bio: { type: String, trim: true }, // Added from KYC Step 1
+  profilePicture: { type: String }, // Added from KYC Step 1 (Cloudinary URL)
+  kycStatus: { type: String, enum: ["incomplete", "pending", "verified", "rejected"], default: "incomplete" }, // Added for detailed KYC tracking
+  kycProgress: {
+    type: kycProgressSchema,
+    default: () => ({
+      currentStep: 1,
+      step1Completed: false,
+      step2Completed: false,
+      step3Completed: false,
+    }),
+  },
+  servicesRender: { type: [ServiceRenderSubSchema], default: [] }, // Added array for multiple services
   location: LocationSchema,
 }, { discriminatorKey: 'userType' });
 

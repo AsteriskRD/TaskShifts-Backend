@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { ClientModel, ProviderModel, UserModel } from '../models/user';
 import { getCoordinates } from '../utils/geocode';
 import { LocationDetails } from '../interfaces/user';
-
+import { findUserByEmail, findUserById, findProviderById, findClientById } from '../utils/userUtils';
 /**
  * POST /api/profile/complete
  * Completes a Google user's profile (client or provider) by collecting their contact and location info.
@@ -34,7 +34,7 @@ export const completeProfile = async (req: Request, res: Response) => {
     }
 
     // Find user across all user types
-    const user = await UserModel.findOne({ email });
+    const user = await findUserByEmail(email);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -51,12 +51,12 @@ export const completeProfile = async (req: Request, res: Response) => {
     }
 
     // Determine model (Client or Provider)
-    let fullUser;
+    let fullUser: any;
 
     if (user.userType === 'provider') {
-      fullUser = await (ProviderModel as typeof ProviderModel).findOne({ email });
+      fullUser = await findProviderById(user._id);
     } else {
-      fullUser = await (ClientModel as typeof ClientModel).findOne({ email });
+      fullUser = await findClientById(user._id);
     }
 
     if (!fullUser) {
@@ -139,7 +139,7 @@ export const getProfile = async (req: Request, res: Response) => {
     }
 
     // Find user across all user types
-    const user = await UserModel.findById(id);
+    const user = await findUserById(id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -148,11 +148,12 @@ export const getProfile = async (req: Request, res: Response) => {
     }
 
     // Load full user record based on userType
-    let fullUser;
+    let fullUser: any;
+
     if (user.userType === 'provider') {
-      fullUser = await ProviderModel.findOne({ email: user.email });
+      fullUser = await findProviderById(user._id);
     } else {
-      fullUser = await ClientModel.findOne({ email: user.email });
+      fullUser = await findClientById(user._id);
     }
 
     if (!fullUser) {
@@ -180,10 +181,10 @@ export const getProfile = async (req: Request, res: Response) => {
         isVerified: fullUser.isVerified,
         termsAccepted: fullUser.termsAccepted,
         isPremium: fullUser.isPremium,
-        isKyc: fullUser.isKyc,
         ...(fullUser.userType === 'provider' && {
           service: fullUser.service,
           availability: fullUser.availability,
+          kycStatus: fullUser.kycStatus,
         }),
       },
     });
@@ -229,7 +230,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     }
 
     // Find user across all user types
-    const user = await UserModel.findOne({ email });
+    const user = await findUserByEmail(email);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -238,10 +239,13 @@ export const updateProfile = async (req: Request, res: Response) => {
     }
 
     // Determine model (Client or Provider)
-    const fullUser =
-      user.userType === 'provider'
-        ? await ProviderModel.findOne({ email })
-        : await ClientModel.findOne({ email });
+    let fullUser: any;
+
+    if (user.userType === 'provider') {
+      fullUser = await findProviderById(user._id);
+    } else {
+      fullUser = await findClientById(user._id);
+    }
 
     if (!fullUser) {
       return res.status(404).json({
@@ -299,6 +303,7 @@ export const updateProfile = async (req: Request, res: Response) => {
         ...(fullUser.userType === 'provider' && {
           service: fullUser.service,
           availability: fullUser.availability,
+          kycStatus: fullUser.kycStatus,
         }),
       },
     });

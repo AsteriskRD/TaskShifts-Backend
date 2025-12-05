@@ -7,6 +7,12 @@ import { LocationDetails } from '../interfaces/user';
 import { UserModel, ClientModel, ProviderModel } from '../models/user';
 import { sendVerificationEmail } from '../services/verifyEmailService';
 import { sendPasswordResetEmail } from '../services/resetEmailService';
+import {
+  findUserByEmail,
+  findUserById,
+  findProviderById,
+  findUserByResetToken,
+} from '../utils/userUtils';
 
 /**
  * ======================================
@@ -52,7 +58,7 @@ export const register = async (req: Request, res: Response) => {
     }
 
     // Check if user already exists
-    const existingUser = await UserModel.findOne({ email });
+    const existingUser = await findUserByEmail(email);
     if (existingUser) {
       return res.status(409).json({
         success: false,
@@ -147,7 +153,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Find user by email
-    const user = await UserModel.findOne({ email });
+    const user = await findUserByEmail(email);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -156,7 +162,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Compare password using bcrypt
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    const isMatch = await bcrypt.compare(password, user.passwordHash!);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -227,12 +233,12 @@ export const login = async (req: Request, res: Response) => {
         location: user.location,
         ...(user.userType === 'provider' && { 
           service: user.service,
-          availability: user.availability, 
+          availability: user.availability,
+          kycStatus: user.kycStatus,
         }), 
         isVerified: user.isVerified,
         termsAccepted: user.termsAccepted,
         isPremium: user.isPremium,
-        isKyc: user.isKyc,
       },
     });
   } catch (error: any) {
@@ -255,7 +261,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
   try {
     const { email, verificationCode } = req.body;
 
-    const user = await UserModel.findOne({ email });
+    const user = await findUserByEmail(email);
     if (!user || user.verificationCode !== verificationCode || user.verificationCodeExpires! < new Date()) {
       return res.status(400).json({
         success: false,
@@ -292,7 +298,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
   const { email } = req.body;
 
   try {
-    const user = await UserModel.findOne({ email });
+    const user = await findUserByEmail(email);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -339,10 +345,7 @@ export const resetPassword = async (req: Request, res: Response) => {
   try {
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-    const user = await UserModel.findOne({
-      resetPasswordToken: hashedToken,
-      resetPasswordExpires: { $gt: new Date() }, // not expired
-    });
+    const user = await findUserByResetToken(hashedToken);
 
     if (!user) {
       return res.status(400).json({
@@ -399,15 +402,16 @@ export const changePassword = async (req: Request, res: Response) => {
       });
     } 
     // Verify user
-    const user = await UserModel.findById(id);
+    const user = await findUserById(id);
     if (!user) {
       return res.status(404).json({
         success: false,
         message: "TaskShifts: User not found"
       });
     }
+
     // Verify password
-    const isMatch = await bcrypt.compare(oldPassword, user.passwordHash);
+    const isMatch = await bcrypt.compare(oldPassword, user.passwordHash!);
     if (!isMatch) {
       return res.status(400).json({
         success: false,
@@ -450,7 +454,7 @@ export const logout = async (req: Request, res: Response) => {
     }
 
     // Increment tokenVersion to invalidate existing refresh tokens
-    const user = await UserModel.findById(id);
+    const user = await findUserById(id);
     if (!user) {
       return res.status(404).json({
         success: false,
