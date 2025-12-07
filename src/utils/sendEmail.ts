@@ -6,9 +6,9 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
   try {
     await resend.emails.send({
       from: "TaskShifts <no-reply@taskshifts.com>",
-      to,
-      subject,
-      html,
+      to: [to],
+      subject: subject,
+      html: html,
     });
     return true;
   } catch (error) {
