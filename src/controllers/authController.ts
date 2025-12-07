@@ -114,8 +114,8 @@ export const register = async (req: Request, res: Response) => {
       // Send verification email
       await sendEmail(
         email,
-        subject: "TaskShifts - Verify Your Email",
-        html: verifyEmailTemplate(verificationLink),
+        "TaskShifts - Verify Your Email",
+        verifyEmailTemplate(verificationLink),
       );
 
       res.status(201).json({
@@ -129,8 +129,8 @@ export const register = async (req: Request, res: Response) => {
       // Send verification email
       await sendEmail(
         email,
-        subject: "TaskShifts - Verify Your Email",
-        html: verifyEmailTemplate(verificationLink),
+        "TaskShifts - Verify Your Email",
+        verifyEmailTemplate(verificationLink),
       );
 
       res.status(201).json({
@@ -222,8 +222,8 @@ export const login = async (req: Request, res: Response) => {
       // Send verification email
       await sendEmail(
         email,
-        subject: "TaskShifts - Verify Your Email",
-        html: verifyEmailTemplate(verificationLink),
+        "TaskShifts - Verify Your Email",
+        verifyEmailTemplate(verificationLink),
       );
 
       return res.status(403).json({
@@ -344,8 +344,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
     // Send email
     await sendEmail(
       email,
-      subject: "TaskShifts - Verify Your Email",
-      html: resetEmailTemplate(resetLink),
+      "TaskShifts - Verify Your Email",
+      resetEmailTemplate(resetLink),
     );
 
     res.status(200).json({
