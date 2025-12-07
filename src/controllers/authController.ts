@@ -112,11 +112,11 @@ export const register = async (req: Request, res: Response) => {
       const user = await (ClientModel as typeof ClientModel).create(userData);
 
       // Send verification email
-      await sendEmail({
+      await sendEmail(
         email,
         subject: "TaskShifts - Verify Your Email",
         html: verifyEmailTemplate(verificationLink),
-      });
+      );
 
       res.status(201).json({
         success: true,
@@ -127,11 +127,11 @@ export const register = async (req: Request, res: Response) => {
       const user = await (ProviderModel as typeof ProviderModel).create(userData);
 
       // Send verification email
-      await sendEmail({
+      await sendEmail(
         email,
         subject: "TaskShifts - Verify Your Email",
         html: verifyEmailTemplate(verificationLink),
-      });
+      );
 
       res.status(201).json({
         success: true,
@@ -220,11 +220,11 @@ export const login = async (req: Request, res: Response) => {
       const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify?email=${encodeURIComponent(email)}&code=${verificationCode}`;
 
       // Send verification email
-      await sendEmail({
+      await sendEmail(
         email,
         subject: "TaskShifts - Verify Your Email",
         html: verifyEmailTemplate(verificationLink),
-      });
+      );
 
       return res.status(403).json({
         success: true,
@@ -342,11 +342,11 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
     // Send email
-    await sendEmail({
+    await sendEmail(
       email,
       subject: "TaskShifts - Verify Your Email",
       html: resetEmailTemplate(resetLink),
-    });
+    );
 
     res.status(200).json({
       success: true,
