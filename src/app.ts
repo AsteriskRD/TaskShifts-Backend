@@ -33,7 +33,7 @@ app.use(
 
       const allowedOrigins =
         process.env.NODE_ENV === "production"
-          ? ["https://taskshifts.com"]
+          ? ["https://taskshifts-frontend-n.vercel.app"]
           : ["http://localhost:3000"];
 
       if (allowedOrigins.includes(origin)) {
