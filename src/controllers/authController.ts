@@ -106,7 +106,7 @@ export const register = async (req: Request, res: Response) => {
     };
 
     // Construct verification link
-    const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/success-verify/verify?email=${encodeURIComponent(email)}&code=${verificationCode}`;
+    const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/success-verify?email=${encodeURIComponent(email)}&code=${verificationCode}`;
 
     if (userType === 'client') {
       const user = await (ClientModel as typeof ClientModel).create(userData);
@@ -217,7 +217,7 @@ export const login = async (req: Request, res: Response) => {
       const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
      
       // Construct verification link
-      const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify?email=${encodeURIComponent(email)}&code=${verificationCode}`;
+      const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/success-verify?email=${encodeURIComponent(email)}&code=${verificationCode}`;
 
       // Send verification email
       await sendEmail(
