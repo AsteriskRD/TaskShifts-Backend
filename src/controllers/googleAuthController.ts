@@ -161,31 +161,47 @@ export const googleLogin = async (req: Request, res: Response) => {
         },
       });
     }
-
     return res.status(200).json({
       success: true,
       message: 'TaskShifts: Login successful.',
-      token: accessToken,
+      accessToken,
       user: {
         userId: user.userId,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        userType: user.userType,
-        isProfileComplete: user.isProfileComplete,
-        gender: user.gender,
-        phone: user.phone,
-        alternatePhone: user.alternatePhone,
-        dateOfBirth: user.dateOfBirth,
-        location: user.location,
-        ...(user.userType === 'provider' && { 
-          service: user.service,
-          availability: user.availability,
-          kycStatus: user.kycStatus,
-        }),
+        userType: user.userType,        // 'client' | 'provider'
+        userRole: user.userRole || 'user',  // 'user' | 'admin'                                                                                                 
+        // Personal info
+        gender: user.gender || null,
+        phone: user.phone || null,
+        alternatePhone: user.alternatePhone || null,
+        dateOfBirth: user.dateOfBirth || null,
+        bio: user.bio || '',
+        profilePicture: user.profilePicture || null,
+
+        // Status flags
         isVerified: user.isVerified,
-        termsAccepted: user.termsAccepted,
+        isProfileComplete: user.isProfileComplete,
         isPremium: user.isPremium,
+        termsAccepted: user.termsAccepted,
+
+        // Location
+        location: user.location || null,
+
+        // Provider-only fields
+        ...(user.userType === 'provider' && {
+          service: user.service || null,
+          availability: user.availability ?? true,
+          kycStatus: user.kycStatus || 'incomplete',
+          kycProgress: user.kycProgress || {
+            currentStep: 1,
+            step1Completed: false,
+            step2Completed: false,
+            step3Completed: false,
+          },
+          servicesRender: user.servicesRender || [],
+        }),
       },
     });
   } catch (error: any) {
