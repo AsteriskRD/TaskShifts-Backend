@@ -247,21 +247,39 @@ export const login = async (req: Request, res: Response) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        userType: user.userType,
-        gender: user.gender,
-        phone: user.phone,
-        alternatePhone: user.alternatePhone,
-        dateOfBirth: user.dateOfBirth,
-        isProfileComplete: user.isProfileComplete,
-        location: user.location,
-        ...(user.userType === 'provider' && { 
-          service: user.service,
-          availability: user.availability,
-          kycStatus: user.kycStatus,
-        }), 
+        userType: user.userType,        // 'client' | 'provider'
+        userRole: user.userRole || 'user',  // 'user' | 'admin'
+    
+        // Personal info
+        gender: user.gender || null,
+        phone: user.phone || null,
+        alternatePhone: user.alternatePhone || null,
+        dateOfBirth: user.dateOfBirth || null,
+        bio: user.bio || '',
+        profilePicture: user.profilePicture || null,
+
+        // Status flags
         isVerified: user.isVerified,
-        termsAccepted: user.termsAccepted,
+        isProfileComplete: user.isProfileComplete,
         isPremium: user.isPremium,
+        termsAccepted: user.termsAccepted,
+
+        // Location
+        location: user.location || null,
+
+        // Provider-only fields
+        ...(user.userType === 'provider' && {
+          service: user.service || null,
+          availability: user.availability ?? true,
+          kycStatus: user.kycStatus || 'incomplete',
+          kycProgress: user.kycProgress || {
+            currentStep: 1,
+            step1Completed: false,
+            step2Completed: false,
+            step3Completed: false,
+          },
+          servicesRender: user.servicesRender || [],
+        }),
       },
     });
   } catch (error: any) {
