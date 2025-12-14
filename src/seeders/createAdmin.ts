@@ -33,6 +33,13 @@ export const createDefaultAdmin = async () => {
       isProfileComplete: true,
       termsAccepted: true,
       kycStatus: 'verified',
+      service: {
+    	serviceCategory: 'Platform Administration',
+    	registrationStatus: 'Verified',
+    	businessName: 'TaskShifts HQ',
+    	serviceDescription: 'Official platform administration account',
+    	website: 'https://taskshifts.com',
+      },
       kycProgress: {
         currentStep: 3,
         step1Completed: true,
@@ -59,6 +66,10 @@ export const createDefaultAdmin = async () => {
     console.log('Password:', ADMIN_PASSWORD);
     console.log('Login at: http://localhost:3000/admin');
   } catch (error: any) {
-    console.error('Failed to create default admin:', error.message);
+    if (error.code === 11000) {
+      console.log(`Default admin already exists: ${ADMIN_EMAIL}`);
+    } else {
+      console.error('Failed to create default admin:', error.message);
+    }
   }
 };
