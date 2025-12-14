@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/app.js",
     "build": "tsup src/app.ts --format cjs --target node20 --out-dir dist",
-    "dev": "ts-node-dev --respawn src/app.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
     "test": "test"
   },
   "keywords": [],
