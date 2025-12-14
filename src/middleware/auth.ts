@@ -62,39 +62,55 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
   }
 };
 
+
 // ---------------------
 // REFRESH TOKEN HANDLER
 // ---------------------
-
 export const refreshAccessToken = async (req: Request, res: Response) => {
-  const { refreshToken } = req.body;
-  if (!refreshToken)
-    return res.status(400).json({ message: 'Refresh token required' });
+  const refreshToken = req.cookies.refreshToken;  // Read from cookie
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: 'No refresh token provided' });
+  }
 
   try {
-    const decoded = jwt.verify(refreshToken, REFRESH_SECRET) as JwtPayload;
+    const decoded = jwt.verify(refreshToken, REFRESH_SECRET) as { id: string; tokenVersion: number };
+
     const user = await findUserById(decoded.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-    // tokenVersion check → reject if revoked
-    if (user.tokenVersion !== decoded.tokenVersion)
+    // Revocation check
+    if (user.tokenVersion !== decoded.tokenVersion) {
       return res.status(403).json({ message: 'Token revoked. Please log in again.' });
+    }
 
+    // Generate new tokens
     const newAccessToken = generateAccessToken({
-      _id: user._id,
+      id: user._id.toString(),
       userType: user.userType,
     });
 
     const newRefreshToken = generateRefreshToken({
-      _id: user._id,
+      id: user._id.toString(),
       tokenVersion: user.tokenVersion,
+    });
+
+    // Update the cookie with new refresh token (token rotation)
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     return res.status(200).json({
       success: true,
       message: 'Access token refreshed',
       accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
+      // Optional:
+      // refreshToken: newRefreshToken,
     });
   } catch (err: any) {
     return res.status(401).json({ message: 'Invalid or expired refresh token' });
