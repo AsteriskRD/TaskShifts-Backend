@@ -7,6 +7,7 @@ export interface IUser extends Document {
   passwordHash?: string; // optional for Google users
   googleId?: string; // optional for email user
   userType: 'client' | 'provider';
+  userRole?: 'user' | 'admin';
   isVerified: boolean;
   isProfileComplete: boolean;
   termsAccepted: boolean;

@@ -105,7 +105,10 @@ const connectDB = async () => {
     await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost/taskshifts', {
       serverSelectionTimeoutMS: 30000,
     });
+    // Create default admin if not exists
+    await import('./seeders/createAdmin').then(module => module.createDefaultAdmin());
     console.log('TaskShifts MongoDB connected');
+    console.log(`Admin dashboard: http://localhost:3000/admin`);
   } catch (error) {
     console.error('MongoDB connection error:', error);
     process.exit(1);
