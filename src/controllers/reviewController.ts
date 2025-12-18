@@ -25,7 +25,7 @@ export const createReview = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Provider not found' });
     }
 
-    // Optional: Prevent duplicate reviews (one per client-provider pair)
+    // Prevent duplicate reviews (one per client-provider pair)
     const existingReview = await ReviewModel.findOne({ clientId, providerId });
     if (existingReview) {
       return res.status(409).json({ message: 'You have already reviewed this provider' });
@@ -97,6 +97,37 @@ export const getProviderReviews = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Get reviews error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// DELETE /api/reviews/:reviewId - Admin only: Delete a review
+export const deleteReview = async (req: Request, res: Response) => {
+  try {
+    const { reviewId } = req.params;
+    const adminUser = (req as any).user;  // from verifyToken middleware
+
+    // Only admins can delete reviews
+    if (adminUser.userRole !== 'admin') {
+      return res.status(403).json({ 
+        message: 'Forbidden: Only admins can delete reviews' 
+      });
+    }
+
+    const review = await ReviewModel.findById(reviewId);
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    await ReviewModel.deleteOne({ _id: reviewId });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Review deleted successfully',
+      deletedReviewId: reviewId,
+    });
+  } catch (error: any) {
+    console.error('Delete review error:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
