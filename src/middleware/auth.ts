@@ -14,7 +14,7 @@ if (!JWT_SECRET || !REFRESH_SECRET) {
 // TOKEN GENERATORS
 // ---------------------
 
-export const generateAccessToken = (user: { _id: mongoose.Types.ObjectId; userType?: string userRole?.: string}) => {
+export const generateAccessToken = (user: { _id: mongoose.Types.ObjectId; userType?: string, userRole?: string }) => {
   const payload = { id: user._id.toString(), userType: user.userType, userRole: user.userRole };
   return jwt.sign(payload, JWT_SECRET, {
     algorithm: 'HS256',
