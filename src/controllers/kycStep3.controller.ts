@@ -43,6 +43,7 @@ export const kycStep3 = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Complete previous steps first' });
 
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    if (files) console.log("files :", files);
     const services: IServiceInput[] = JSON.parse(req.body.services);
 
     if (!services || services.length === 0)
@@ -54,19 +55,30 @@ export const kycStep3 = async (req: Request, res: Response) => {
 
       const portfolioUrls = await Promise.all(
         service.portfolio.map(async (item: any) => {
-          const fileKey = item.fileField; // e.g., "portfolio_0", "portfolio_1"
-          const file = files[fileKey]?.[0];
-          if (!file) throw new Error(`Missing portfolio image: ${fileKey}`);
+          if (item.file) {
+            const fileKey = item.fileField; // e.g., "portfolio_0", "portfolio_1"
+            const file = files[fileKey]?.[0];
+            if (!file) console.warn(`Missing file for ${item.fileField} — skipping`);
+            //if (!file) throw new Error(`Missing portfolio image: ${fileKey}`);
+          
+            const result = await uploadToCloudinary(file.path, `portfolio/${provider._id}`);
+            await fs.unlink(file.path).catch(() => {});
 
-          const result = await uploadToCloudinary(file.path, `portfolio/${provider._id}`);
-          await fs.unlink(file.path).catch(() => {});
+            return {
+              filePath: result.secure_url,
+              skillLevel: item.skillLevel,
+              experience: item.experience,
+              description: item.description,
+            };
+          } else {
 
-          return {
-            filePath: result.secure_url,
-            skillLevel: item.skillLevel,
-            experience: item.experience,
-            description: item.description,
-          };
+            return {
+              filePath: "",
+              skillLevel: item.skillLevel,
+              experience: item.experience,
+              description: item.description,
+            };
+          }
         })
       );
 
