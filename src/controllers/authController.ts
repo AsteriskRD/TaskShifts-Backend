@@ -215,6 +215,13 @@ export const login = async (req: Request, res: Response) => {
       // Generate verification code
       const verificationCode = crypto.randomBytes(3).toString('hex');
       const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      
+      // Assigned the verificationCode and verificationCodeExpires to user
+      user.verificationCode = verificationCode;
+      user.verificationCodeExpires = verificationCodeExpires;
+
+      // save user
+      await user.save(); 
      
       // Construct verification link
       const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/link-verify-email?email=${encodeURIComponent(email)}&code=${verificationCode}`;
