@@ -15,6 +15,7 @@ import kycStep3Routes from './routes/kycStep3.routes';
 import searchRoutes from './routes/search.routes';
 import tokenRoutes from './routes/tokenRoutes';
 import bookingRoutes from './routes/bookingRoutes';
+import reviewRoutes from './routes/review.routes';
 
 
 // Load environment variables from .env
@@ -34,7 +35,11 @@ app.use(
 
       const allowedOrigins =
         process.env.NODE_ENV === "production"
-          ? ["https://taskshifts.com"]
+          ? [
+              "https://taskshifts-frontend-n.vercel.app",
+              "http://127.0.0.1/3000",
+              "http://localhost:3000"
+            ]
           : ["http://localhost:3000"];
 
       if (allowedOrigins.includes(origin)) {
@@ -91,6 +96,7 @@ app.use('/api/profile', profileRoutes); // Mount the profileRoutes
 app.use('/api/token', tokenRoutes); // Mount the refresh token route
 app.use('api/booking', bookingRoutes);  // Mount the booking routes
 
+app.use('/api/reviews', reviewRoutes); // Mount the review route
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
@@ -103,7 +109,10 @@ const connectDB = async () => {
     await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost/taskshifts', {
       serverSelectionTimeoutMS: 30000,
     });
+    // Create default admin if not exists
+    await import('./seeders/createAdmin').then(module => module.createDefaultAdmin());
     console.log('TaskShifts MongoDB connected');
+    console.log(`Admin dashboard: http://localhost:3000/admin`);
   } catch (error) {
     console.error('MongoDB connection error:', error);
     process.exit(1);

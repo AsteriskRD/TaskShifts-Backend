@@ -5,8 +5,9 @@ import { getCoordinates } from '../utils/geocode';
 import { generateAccessToken, generateRefreshToken }  from '../middleware/auth';
 import { LocationDetails } from '../interfaces/user';
 import { UserModel, ClientModel, ProviderModel } from '../models/user';
-import { sendVerificationEmail } from '../services/verifyEmailService';
-import { sendPasswordResetEmail } from '../services/resetEmailService';
+import { verifyEmailTemplate } from "../emailTemplates/verificationTemplates";
+import { resetEmailTemplate } from "../emailTemplates/resetTemplates";
+import { sendEmail } from "../utils/sendEmail";
 import {
   findUserByEmail,
   findUserById,
@@ -104,11 +105,18 @@ export const register = async (req: Request, res: Response) => {
       verificationCodeExpires,
     };
 
+    // Construct verification link
+    const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/link-verify-email?email=${encodeURIComponent(email)}&code=${verificationCode}`;
+
     if (userType === 'client') {
       const user = await (ClientModel as typeof ClientModel).create(userData);
 
       // Send verification email
-      await sendVerificationEmail(email, verificationCode);
+      await sendEmail(
+        email,
+        "TaskShifts - Verify Your Email",
+        verifyEmailTemplate(verificationLink),
+      );
 
       res.status(201).json({
         success: true,
@@ -117,8 +125,14 @@ export const register = async (req: Request, res: Response) => {
       });
     } else {
       const user = await (ProviderModel as typeof ProviderModel).create(userData);
+
       // Send verification email
-      await sendVerificationEmail(email, verificationCode);
+      await sendEmail(
+        email,
+        "TaskShifts - Verify Your Email",
+        verifyEmailTemplate(verificationLink),
+      );
+
       res.status(201).json({
         success: true,
         message: 'TaskShifts: Registration successful. Check your email for verification link.',
@@ -201,8 +215,24 @@ export const login = async (req: Request, res: Response) => {
       // Generate verification code
       const verificationCode = crypto.randomBytes(3).toString('hex');
       const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      
+      // Assigned the verificationCode and verificationCodeExpires to user
+      user.verificationCode = verificationCode;
+      user.verificationCodeExpires = verificationCodeExpires;
+
+      // save user
+      await user.save(); 
+     
+      // Construct verification link
+      const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/link-verify-email?email=${encodeURIComponent(email)}&code=${verificationCode}`;
+
       // Send verification email
-      await sendVerificationEmail(user.email, verificationCode);
+      await sendEmail(
+        email,
+        "TaskShifts - Verify Your Email",
+        verifyEmailTemplate(verificationLink),
+      );
+
       return res.status(403).json({
         success: true,
         message: 'TaskShifts: Email address not verified. verification link sent to your email.',
@@ -224,21 +254,39 @@ export const login = async (req: Request, res: Response) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        userType: user.userType,
-        gender: user.gender,
-        phone: user.phone,
-        alternatePhone: user.alternatePhone,
-        dateOfBirth: user.dateOfBirth,
-        isProfileComplete: user.isProfileComplete,
-        location: user.location,
-        ...(user.userType === 'provider' && { 
-          service: user.service,
-          availability: user.availability,
-          kycStatus: user.kycStatus,
-        }), 
+        userType: user.userType,        // 'client' | 'provider'
+        userRole: user.userRole || 'user',  // 'user' | 'admin'
+    
+        // Personal info
+        gender: user.gender || null,
+        phone: user.phone || null,
+        alternatePhone: user.alternatePhone || null,
+        dateOfBirth: user.dateOfBirth || null,
+        bio: user.bio || '',
+        profilePicture: user.profilePicture || null,
+
+        // Status flags
         isVerified: user.isVerified,
-        termsAccepted: user.termsAccepted,
+        isProfileComplete: user.isProfileComplete,
         isPremium: user.isPremium,
+        termsAccepted: user.termsAccepted,
+
+        // Location
+        location: user.location || null,
+
+        // Provider-only fields
+        ...(user.userType === 'provider' && {
+          service: user.service || null,
+          availability: user.availability ?? true,
+          kycStatus: user.kycStatus || 'incomplete',
+          kycProgress: user.kycProgress || {
+            currentStep: 1,
+            step1Completed: false,
+            step2Completed: false,
+            step3Completed: false,
+          },
+          servicesRender: user.servicesRender || [],
+        }),
       },
     });
   } catch (error: any) {
@@ -315,8 +363,15 @@ export const forgotPassword = async (req: Request, res: Response) => {
     user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
     await user.save();
 
+    // Construct reset link (frontend URL)
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
     // Send email
-    await sendPasswordResetEmail(user.email, resetToken);
+    await sendEmail(
+      email,
+      "TaskShifts - Verify Your Email",
+      resetEmailTemplate(resetLink),
+    );
 
     res.status(200).json({
       success: true,

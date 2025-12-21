@@ -39,10 +39,14 @@ export const kycStep3 = async (req: Request, res: Response) => {
     if (!provider || provider.userType !== 'provider')
       return res.status(404).json({ message: 'Provider not found' });
 
+    if (provider.kycStatus === 'verified')
+      return res.status(400).json({ message: 'kyc already completed' });
+
     if (provider.kycStatus !== 'pending')
       return res.status(400).json({ message: 'Complete previous steps first' });
 
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    if (files) console.log("files :", files);
     const services: IServiceInput[] = JSON.parse(req.body.services);
 
     if (!services || services.length === 0)
@@ -54,19 +58,27 @@ export const kycStep3 = async (req: Request, res: Response) => {
 
       const portfolioUrls = await Promise.all(
         service.portfolio.map(async (item: any) => {
-          const fileKey = item.fileField; // e.g., "portfolio_0", "portfolio_1"
-          const file = files[fileKey]?.[0];
-          if (!file) throw new Error(`Missing portfolio image: ${fileKey}`);
+          const file = (files as Express.Multer.File[]).find(f => f.fieldname === item.fileField);
+          
+	  if (!file) {
+     	    console.warn(`Missing file for ${item.fileField} — skipping`);
+      	    return {
+              filePath: "",
+              skillLevel: item.skillLevel,
+              experience: item.experience,
+              description: item.description,
+            };
+          }
 
-          const result = await uploadToCloudinary(file.path, `portfolio/${provider._id}`);
-          await fs.unlink(file.path).catch(() => {});
+	  const result = await uploadToCloudinary(file.path, `portfolio/${provider._id}`);
+    	  await fs.unlink(file.path).catch(() => {});
 
-          return {
+	  return {
             filePath: result.secure_url,
             skillLevel: item.skillLevel,
             experience: item.experience,
-            description: item.description,
-          };
+      	    description: item.description,
+    	  };
         })
       );
 

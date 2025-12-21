@@ -28,6 +28,11 @@ const UserSchema: Schema = new Schema<IUser>({
     enum: ['client', 'provider'],
     required: true,
   },
+  userRole: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user',
+  },
   isVerified: {
     type: Boolean,
     default: false,
