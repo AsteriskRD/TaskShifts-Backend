@@ -74,7 +74,7 @@ app.use(expressjwt({
               '/api/google/signup',
               '/api/google/login',
               '/health',
-              '/api/users/link-verify-email',
+              '/api/users/verify-email',
               '/api/token/refresh-token',
               '/api/users/forgot-password',
               /^\/api\/users\/reset-password\/.*/
