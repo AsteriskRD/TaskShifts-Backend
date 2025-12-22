@@ -49,7 +49,7 @@ const BookingSchema = new Schema<IBooking>({
     providerId: { type: String, required: true, unique: true},
     clientLocation: LocationSchema,
     clientName: { type: String, required: true, trim: true},
-    DateofBooking: { type: Date, default: null },
+    dateOfBooking: { type: Date, default: null },
     providerService: ServiceRenderSubSchema,
 });
 

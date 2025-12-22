@@ -8,6 +8,6 @@ export interface IBooking extends Document {
     providerId: string,
     clientLocation: LocationDetails,
     clientName: string,
-    DateofBooking: Date,
+    dateOfBooking: Date,
     providerService: IServiceRender 
 }

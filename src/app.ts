@@ -94,7 +94,7 @@ app.use('/api/kyc', kycStep3Routes);      // Mount the kyc step 3
 app.use('/api/search', searchRoutes);     // Mount the search routes
 app.use('/api/profile', profileRoutes); // Mount the profileRoutes
 app.use('/api/token', tokenRoutes); // Mount the refresh token route
-app.use('api/booking', bookingRoutes);  // Mount the booking routes
+app.use('/api/booking', bookingRoutes);  // Mount the booking routes
 
 app.use('/api/reviews', reviewRoutes); // Mount the review route
 
