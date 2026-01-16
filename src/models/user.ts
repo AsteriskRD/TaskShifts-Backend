@@ -169,6 +169,24 @@ const ProviderSchema: Schema = new Schema<IProvider>({
   },
   servicesRender: { type: [ServiceRenderSubSchema], default: [] }, // Added array for multiple services
   location: LocationSchema,
+  accountVisibility: {
+    type: String,
+    enum: ['public', 'private'],
+    default: 'public',
+  },
+  notificationPreferences: {
+    app: { type: Boolean, default: true },
+    email: { type: Boolean, default: true },
+    sound: { type: Boolean, default: true },
+    vibration: { type: Boolean, default: true },
+    autoReplyEnabled: { type: Boolean, default: false },
+  },
+  preferences: {
+    language: { type: String, default: 'en' },
+    country: { type: String, default: 'US' },
+    currency: { type: String, default: 'USD' },
+    theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
+  },
 }, { discriminatorKey: 'userType' });
 
 export const ClientModel = UserModel.discriminator<IClient>('Client', ClientSchema);
