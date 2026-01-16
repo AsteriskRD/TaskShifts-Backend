@@ -17,7 +17,7 @@ import tokenRoutes from './routes/tokenRoutes';
 import bookingRoutes from './routes/bookingRoutes';
 import reviewRoutes from './routes/review.routes';
 import adminKycRoutes from './routes/admin.routes';
-
+import providerRoutes from './routes/provider.routes.';
 
 // Load environment variables from .env
 require('dotenv').config();
@@ -98,6 +98,7 @@ app.use('/api/token', tokenRoutes); // Mount the refresh token route
 app.use('/api/booking', bookingRoutes);  // Mount the booking routes
 app.use('/api/admin', adminKycRoutes);  // Mount the admin kyc routes
 app.use('/api/reviews', reviewRoutes); // Mount the review route
+app.use('/api/provider', providerRoutes); // Mount the availability route
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
