@@ -16,6 +16,7 @@ import searchRoutes from './routes/search.routes';
 import tokenRoutes from './routes/tokenRoutes';
 import bookingRoutes from './routes/bookingRoutes';
 import reviewRoutes from './routes/review.routes';
+import adminKycRoutes from './routes/admin.routes';
 
 
 // Load environment variables from .env
@@ -95,7 +96,7 @@ app.use('/api/search', searchRoutes);     // Mount the search routes
 app.use('/api/profile', profileRoutes); // Mount the profileRoutes
 app.use('/api/token', tokenRoutes); // Mount the refresh token route
 app.use('/api/booking', bookingRoutes);  // Mount the booking routes
-
+app.use('/api/admin', adminKycRoutes);  // Mount the admin kyc routes
 app.use('/api/reviews', reviewRoutes); // Mount the review route
 
 // Health check
