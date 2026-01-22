@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { findProviderById } from '../utils/userUtils';
+import { ProviderModel } from '../models/user';
 
 // PATCH /api/provider/settings/visibility
 export const updateAccountVisibility = async (req: Request, res: Response) => {
