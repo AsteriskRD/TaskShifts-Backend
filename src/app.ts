@@ -17,7 +17,7 @@ import tokenRoutes from './routes/tokenRoutes';
 import bookingRoutes from './routes/bookingRoutes';
 import reviewRoutes from './routes/review.routes';
 import adminKycRoutes from './routes/admin.routes';
-import providerRoutes from './routes/provider.routes.';
+import providerRoutes from './routes/provider.routes';
 
 // Load environment variables from .env
 require('dotenv').config();
@@ -79,7 +79,8 @@ app.use(expressjwt({
               '/api/users/verify-email',
               '/api/token/refresh-token',
               '/api/users/forgot-password',
-              /^\/api\/users\/reset-password\/.*/
+              /^\/api\/users\/reset-password\/.*/,
+              { url: /^\/api\/reviews\/provider(\/.*)?$/, methods: ['GET'] }
       ]
     }
   )
