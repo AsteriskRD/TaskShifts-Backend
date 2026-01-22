@@ -1,4 +1,6 @@
 // PATCH /api/provider/availability
+import { findProviderById } from '../utils/userUtils';
+
 export const updateAvailability = async (req: Request, res: Response) => {
   try {
     const providerId = (req as any).user.id; // from verifyToken middleware
@@ -11,7 +13,7 @@ export const updateAvailability = async (req: Request, res: Response) => {
     let newAvailability: boolean;
 
     // If explicit value in body, use it
-    if (req.body.available !== undefined) {
+    if (req.body && req.body.available !== undefined) {
       newAvailability = !!req.body.available; // coerce to boolean
     } 
     // Otherwise, toggle current value
