@@ -135,7 +135,7 @@ export const approveKyc = async (req: Request, res: Response) => {
 
     // Audit log
     await AuditLogModel.create({
-      adminId: admin._id,
+      adminId: admin.id,
       action: step ? `kyc_approve_step_${step}` : 'kyc_approve_full',
       targetId: provider._id,
       details: { step, comment },
@@ -186,7 +186,7 @@ export const rejectKyc = async (req: Request, res: Response) => {
 
     // Audit log
     await AuditLogModel.create({
-      adminId: admin._id,
+      adminId: admin.id,
       action: step ? `kyc_reject_step_${step}` : 'kyc_reject_full',
       targetId: provider._id,
       details: { step, reason, comment },
