@@ -286,6 +286,9 @@ export const login = async (req: Request, res: Response) => {
             step3Completed: false,
           },
           servicesRender: user.servicesRender || [],
+          accountVisibility: user.accountVisibility || null,
+          notificationPreferences: user.notificationPreferences || null,
+          preferences: user.preferences || null,
         }),
       },
     });
