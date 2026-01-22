@@ -85,23 +85,18 @@ export interface IProvider extends IUser {
   kycStatus?: 'incomplete' | 'pending' | 'verified' | 'rejected'; // Added for detailed KYC tracking
   kycProgress: IKycProgress;
   servicesRender: IServiceRender[]; // Added array for multiple services (renamed to avoid conflict)
-}
-
-/*
-export interface IServiceRender {
-  serviceType: string;
-  category: string;
-  subcategory: string;
-  description: string;
-  skills: { area: string; level: string; experience: string }[];
-  packages: { name: string; price: number; currency: string; deliveryTime: string; description: string }[];
-  portfolio: { filePath: string; skillLevel: string; experience: string; description: string }[];
-  additionalSettings: {
-    serviceDescription: string;
-    cancellationPolicy: string;
+  accountVisibility?: 'public' | 'private';
+  notificationPreferences?: {
+    app: boolean;
+    email: boolean;
+    sound: boolean;
+    vibration: boolean;
+    autoReplyEnabled: boolean;
   };
-  agreeToTerms: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
+  preferences?: {
+    language: string;
+    country: string;
+    currency: string;
+    theme: 'light' | 'dark' | 'system';
+  };
 }
-*/
