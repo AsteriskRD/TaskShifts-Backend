@@ -9,7 +9,7 @@ const router = Router();
 router.post('/', verifyToken, createReview);
 
 // GET /api/reviews/provider/:providerId - Get provider reviews (public)
-router.get('/provider/:providerId', verifyToken, getProviderReviews);
+router.get('/provider/:providerId', getProviderReviews);
 
 // DELETE /api/reviews/:reviewId - Admin only
 router.delete('/:reviewId', verifyToken, deleteReview);
