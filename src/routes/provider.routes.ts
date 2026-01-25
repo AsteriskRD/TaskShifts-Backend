@@ -25,7 +25,7 @@ router.patch('/settings/localization', verifyToken, updateLocalizationPreference
 router.get('/settings', verifyToken, getProviderSettings);
 router.post('/services', verifyToken, addServices);
 router.get('/services', verifyToken, getMyServices);
-router.get('/providers/:providerId/services', getProviderServices);
+router.get('/public/:providerId/services', getProviderServices);
 router.delete('/services/:serviceId', verifyToken, deleteService);
 router.patch('/services/:serviceId', verifyToken, updateService);
 
