@@ -99,7 +99,7 @@ export const getMyServices = async (req: Request, res: Response) => {
   }
 };
 
-// GET /api/providers/:providerId/services (public)
+// GET /api/provider/public/:providerId/services (public)
 export const getProviderServices = async (req: Request, res: Response) => {
   const { providerId } = req.params;
 
