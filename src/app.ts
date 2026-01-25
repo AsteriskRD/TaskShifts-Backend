@@ -80,7 +80,8 @@ app.use(expressjwt({
               '/api/token/refresh-token',
               '/api/users/forgot-password',
               /^\/api\/users\/reset-password\/.*/,
-              { url: /^\/api\/reviews\/provider(\/.*)?$/, methods: ['GET'] }
+              { url: /^\/api\/reviews\/provider(\/.*)?$/, methods: ['GET'] },
+              { url: /^\/api\/provider\/public(\/.*)?$/, methods: ['GET'] }
       ]
     }
   )
