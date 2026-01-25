@@ -123,7 +123,7 @@ const ServiceRenderSubSchema: Schema = new Schema<IServiceRender>({
     serviceDescription: { type: String },
     cancellationPolicy: { type: String }
   },
-  agreeToTerms: { type: Boolean, required: true },
+  agreeToTerms: { type: Boolean, default: true, required: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
