@@ -1,7 +1,11 @@
+import dotenv from 'dotenv';
+dotenv.config();  // Load env vars FIRST
+
 import 'reflect-metadata';
 import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
-import { Server } from 'socket.io';
+import { createServer } from 'http';
+import { initSocket } from './socket';
 import cors from 'cors';
 import { expressjwt } from 'express-jwt';
 import { v2 as cloudinary } from 'cloudinary';
@@ -18,13 +22,15 @@ import bookingRoutes from './routes/bookingRoutes';
 import reviewRoutes from './routes/review.routes';
 import adminKycRoutes from './routes/admin.routes';
 import providerRoutes from './routes/provider.routes';
-
-// Load environment variables from .env
-require('dotenv').config();
+import messagesRoutes from './routes/message.routes';
 
 const app = express();
-const httpServer = require('http').createServer(app);
-const io = new Server(httpServer, { cors: { origin: '*' } });
+
+// Create HTTP server
+const httpServer = createServer(app);
+
+// Initialize Socket.io
+initSocket(httpServer);
 
 // Middleware
 // app.use(cors());
@@ -67,7 +73,13 @@ cloudinary.config({
 // JWT Middleware (exclude public routes)
 app.use(expressjwt({
     secret: process.env.JWT_SECRET || 'secret',
-    algorithms: ['HS256'] 
+    algorithms: ['HS256'],
+    verify: (req, res, buf, encoding) => {
+      if (req.method === 'GET') {
+        // Skip parsing for GET
+        req.body = {};
+      }
+    }
   }).unless(
     {
       path: [
@@ -95,12 +107,13 @@ app.use('/api/kyc', kycStep1Routes);      // Mount the kyc step 1
 app.use('/api/kyc', kycStep2Routes);      // Mount the kyc step 2
 app.use('/api/kyc', kycStep3Routes);      // Mount the kyc step 3
 app.use('/api/search', searchRoutes);     // Mount the search routes
-app.use('/api/profile', profileRoutes); // Mount the profileRoutes
-app.use('/api/token', tokenRoutes); // Mount the refresh token route
-app.use('/api/booking', bookingRoutes);  // Mount the booking routes
-app.use('/api/admin', adminKycRoutes);  // Mount the admin kyc routes
-app.use('/api/reviews', reviewRoutes); // Mount the review route
+app.use('/api/profile', profileRoutes);   // Mount the profileRoutes
+app.use('/api/token', tokenRoutes);       // Mount the refresh token route
+app.use('/api/booking', bookingRoutes);   // Mount the booking routes
+app.use('/api/admin', adminKycRoutes);    // Mount the admin kyc routes
+app.use('/api/reviews', reviewRoutes);    // Mount the review route
 app.use('/api/provider', providerRoutes); // Mount the availability route
+app.use('/api', messagesRoutes);          // Mount the messages routes
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
@@ -122,12 +135,6 @@ const connectDB = async () => {
     process.exit(1);
   }
 };
-
-// WebSocket for messaging
-io.on('connection', (socket) => {
-  console.log('TaskShifts WebSocket client connected');
-  socket.on('disconnect', () => console.log('Client disconnected'));
-});
 
 // Start server after DB connect
 const PORT = process.env.PORT || 3000;
