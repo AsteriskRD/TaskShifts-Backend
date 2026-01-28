@@ -5,6 +5,6 @@ import { verifyToken } from '../middleware/auth';
 const router = Router();
 
 router.get('/messages/:otherUserId', verifyToken, getChatHistory);
-router.get('/messages/unread-count', verifyToken, getUnreadCount);
+router.get('/unread-count/messages', verifyToken, getUnreadCount);
 
 export default router;
