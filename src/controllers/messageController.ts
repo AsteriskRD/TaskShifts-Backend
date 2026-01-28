@@ -40,7 +40,7 @@ export const getChatHistory = async (req: Request, res: Response) => {
   }
 };
 
-// GET /api/messages/unread-count - Get total unread messages
+// GET /api/unread-count/messages - Get total unread messages
 export const getUnreadCount = async (req: Request, res: Response) => {
   try {
     const myId = (req as any).user.id;
