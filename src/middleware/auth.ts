@@ -116,3 +116,14 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
     return res.status(401).json({ message: 'Invalid or expired refresh token' });
   }
 };
+
+export const verifyTokenSocket = async (token: string) => {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; userType: string; userRole?: string };
+    const user = await findUserById(decoded.id);
+    if (!user) throw new Error('User not found');
+    return user;
+  } catch (err) {
+    throw new Error('Invalid token');
+  }
+};
