@@ -4,6 +4,6 @@ import { verifyToken } from '../middleware/auth';
 
 const router = express.Router();
 
-router.post('/', verifyToken, booking);
+router.post('/create', verifyToken, booking);
 
 export default router;

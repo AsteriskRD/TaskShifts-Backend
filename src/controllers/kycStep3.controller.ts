@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
+import { IServiceInput } from "../interfaces/serviceInput";
 import { ProviderModel } from '../models/user';
 import { uploadToCloudinary } from '../utils/cloudinary';
 import fs from 'fs/promises';
 import { findProviderById } from '../utils/userUtils';
-
+/*
 interface IServiceInput {
   serviceType: string;
   category: string;
@@ -29,7 +30,7 @@ interface IServiceInput {
   };
   agreeToTerms: boolean;
 }
-
+*/
 export const kycStep3 = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;

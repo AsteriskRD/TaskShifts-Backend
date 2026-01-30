@@ -1,5 +1,8 @@
 // PATCH /api/provider/availability
 import { findProviderById } from '../utils/userUtils';
+import { IServiceInput } from "../interfaces/serviceInput";
+import { uploadToCloudinary } from '../utils/cloudinary';
+import fs from 'fs/promises';
 
 export const updateAvailability = async (req: Request, res: Response) => {
   try {
@@ -39,26 +42,54 @@ export const updateAvailability = async (req: Request, res: Response) => {
 export const addServices = async (req: Request, res: Response) => {
   try {
     const providerId = (req as any).user.id;
-    const newServices = req.body.services; // array of new service objects
-
-    if (!Array.isArray(newServices) || newServices.length === 0) {
-      return res.status(400).json({ message: 'Services array is required and cannot be empty' });
-    }
 
     const provider = await findProviderById(providerId);
     if (!provider || provider.userType !== 'provider') {
       return res.status(403).json({ message: 'Provider access only' });
     }
 
-    // Optional: Validate each new service structure
-    for (const svc of newServices) {
-      if (!svc.serviceType || !svc.category || !svc.description) {
-        return res.status(400).json({ message: 'Each service must have serviceType, category, and description' });
-      }
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    if (files) console.log("files :", files);
+    const newServices: IServiceInput[] = JSON.parse(req.body.services); // array of new service objects
+
+    if (!Array.isArray(newServices) || newServices.length === 0) {
+      return res.status(400).json({ message: 'Services array is required and cannot be empty' });
+    }
+
+    for (const service of newServices) {
+      if (!service.agreeToTerms)
+        return res.status(400).json({ message: 'You must agree to terms for each service' });
+
+      const portfolioUrls = await Promise.all(
+        service.portfolio.map(async (item: any) => {
+          const file = (files as Express.Multer.File[]).find(f => f.fieldname === item.fileField);
+
+          if (!file) {
+            console.warn(`Missing file for ${item.fileField} — skipping`);
+            return {
+              filePath: "",
+              skillLevel: item.skillLevel,
+              experience: item.experience,
+              description: item.description,
+            };
+          }
+
+          const result = await uploadToCloudinary(file.path, `portfolio/${provider._id}`);
+          await fs.unlink(file.path).catch(() => {});
+
+          return {
+            filePath: result.secure_url,
+            skillLevel: item.skillLevel,
+            experience: item.experience,
+            description: item.description,
+          };
+        })
+      );
+
       // Add defaults or clean data
-      svc.createdAt = new Date();
-      svc.updatedAt = new Date();
-      svc.agreeToTerms = svc.agreeToTerms ?? true;
+      service.createdAt = new Date();
+      service.updatedAt = new Date();
+      service.portfolio = portfolioUrls;
     }
 
     // Append to existing array
@@ -125,7 +156,6 @@ export const updateService = async (req: Request, res: Response) => {
   try {
     const providerId = (req as any).user.id;
     const { serviceId } = req.params;
-    const updates = req.body;
 
     const provider = await findProviderById(providerId);
     if (!provider || provider.userType !== 'provider') {
@@ -140,24 +170,97 @@ export const updateService = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Service not found' });
     }
 
-    // Only allow certain fields to be updated (prevent overwriting critical data)
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+
+    let updates: Partial<IServiceInput>;
+
+    // Handle multipart/form-data (with files) or JSON body
+    if (files && req.body.services) {
+      // Multipart case: JSON in 'services' field + files
+      const parsed = JSON.parse(req.body.services);
+      if (!Array.isArray(parsed) || parsed.length !== 1) {
+        return res.status(400).json({ message: 'services must be an array with exactly one object' });
+      }
+      updates = parsed[0];
+    } else {
+      // Plain JSON body
+      updates = req.body;
+    }
+
+    // Only allow certain fields to be updated
     const allowedUpdates = [
       'serviceType', 'category', 'subcategory', 'description',
       'skills', 'packages', 'portfolio', 'additionalSettings'
     ];
 
-    const sanitizedUpdates: any = {};
+    const sanitizedUpdates: Partial<IServiceInput> = {};
     for (const key in updates) {
       if (allowedUpdates.includes(key)) {
-        sanitizedUpdates[key] = updates[key];
+        sanitizedUpdates[key as keyof IServiceInput] = updates[key];
       }
     }
 
-    if (Object.keys(sanitizedUpdates).length === 0) {
-      return res.status(400).json({ message: 'No valid fields to update' });
+    if (Object.keys(sanitizedUpdates).length === 0 && !files) {
+      return res.status(400).json({ message: 'No valid fields or files to update' });
     }
 
-    // Update the service object
+    // Handle portfolio updates (add new or keep existing URLs)
+    if (sanitizedUpdates.portfolio || files) {
+      const currentPortfolio = provider.servicesRender[serviceIndex].portfolio || [];
+
+      // New portfolio items from request (with fileField or URL)
+      const newPortfolioItems = sanitizedUpdates.portfolio || [];
+
+      // Process uploads for items with fileField
+      const portfolioUrls = await Promise.all(
+        newPortfolioItems.map(async (item: any) => {
+          // If it's an existing URL (string) — keep it
+          if (typeof item === 'string' || (item.filePath && typeof item.filePath === 'string')) {
+            return {
+              filePath: item.filePath || item,
+              skillLevel: item.skillLevel,
+              experience: item.experience,
+              description: item.description,
+            };
+          }
+
+          // If it has fileField → upload new file
+          const fileKey = item.fileField;
+          const file = files ? (files as any)[fileKey]?.[0] : null;
+
+          if (!file) {
+            console.warn(`Missing file for ${fileKey} — skipping`);
+            return {
+              filePath: "",
+              skillLevel: item.skillLevel,
+              experience: item.experience,
+              description: item.description,
+            };
+          }
+
+          const result = await uploadToCloudinary(file.path, `portfolio/${provider._id}`);
+          await fs.unlink(file.path).catch(() => {});
+
+          return {
+            filePath: result.secure_url,
+            skillLevel: item.skillLevel,
+            experience: item.experience,
+            description: item.description,
+          };
+        })
+      );
+
+      // Merge: keep existing portfolio items not overwritten, add/update new ones
+      sanitizedUpdates.portfolio = [
+        ...currentPortfolio.filter(
+          // Keep items that are not being replaced (optional logic — i can adjust as needed)
+          (existing) => !newPortfolioItems.some((newItem: any) => newItem.description === existing.description)
+        ),
+        ...portfolioUrls,
+      ];
+    }
+
+    // Apply sanitized updates to the service
     provider.servicesRender[serviceIndex] = {
       ...provider.servicesRender[serviceIndex],
       ...sanitizedUpdates,
@@ -173,7 +276,7 @@ export const updateService = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Update service error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 

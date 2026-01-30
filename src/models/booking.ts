@@ -1,56 +1,33 @@
-import mongoose, { Schema } from "mongoose";
-import { IBooking } from "../interfaces/booking";
-import { LocationDetails, IServiceRender } from "../interfaces/user";
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
-
-const LocationSchema: Schema = new Schema<LocationDetails>({
-  address: { type: String, required: true, trim: true },
-  city: { type: String, required: true, trim: true },
-  country: { type: String, required: true, trim: true },
-  state: { type: String, required: true, trim: true },
-  postalCode: { type: String, trim: true, uppercase: true },
-  coordinates: { type: [Number], index: '2dsphere' }, // For geospatial matching
-});
-
-const ServiceRenderSubSchema: Schema = new Schema<IServiceRender>({
-  serviceType: { type: String },
-  category: { type: String },
-  subcategory: { type: String },
-  description: { type: String },
-  skills: [{
-    area: { type: String },
-    level: { type: String },
-    experience: { type: String }
-  }],
-  packages: [{
-    name: { type: String },
-    price: { type: Number },
-    currency: { type: String, default: '' },
-    deliveryTime: { type: String },
-    description: { type: String }
-  }],
-  portfolio: [{
-    filePath: { type: String }, // Cloudinary URL
-    skillLevel: { type: String },
-    experience: { type: String },
-    description: { type: String }
-  }],
-  additionalSettings: {
-    serviceDescription: { type: String },
-    cancellationPolicy: { type: String }
-  },
-  agreeToTerms: { type: Boolean, required: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
+export interface IBooking extends Document {
+  clientId: Types.ObjectId;
+  providerId: Types.ObjectId;
+  serviceId: Types.ObjectId; // Reference to one service in servicesRender
+  date: Date;
+  duration: number; // in minutes
+  status: 'pending' | 'accepted' | 'rejected' | 'completed' | 'cancelled' | 'rescheduled';
+  notes?: string;
+  cancellationReason?: string;
+  rescheduleReason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const BookingSchema = new Schema<IBooking>({
-    clientId: { type: String, required: true, unique: true},
-    providerId: { type: String, required: true, unique: true},
-    clientLocation: LocationSchema,
-    clientName: { type: String, required: true, trim: true},
-    dateOfBooking: { type: Date, default: null },
-    providerService: ServiceRenderSubSchema,
-});
+  clientId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  providerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  serviceId: { type: Schema.Types.ObjectId, required: true },
+  date: { type: Date, required: true },
+  duration: { type: Number, required: true, min: 30 },
+  status: {
+    type: String,
+    enum: ['pending', 'accepted', 'rejected', 'completed', 'cancelled', 'rescheduled'],
+    default: 'pending',
+  },
+  notes: { type: String },
+  cancellationReason: { type: String },
+  rescheduleReason: { type: String },
+}, { timestamps: true });
 
 export const BookingModel = mongoose.model<IBooking>('Booking', BookingSchema);
