@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { verifyToken } from '../middleware/auth';
 import {
   updateAvailability,
@@ -15,6 +16,7 @@ import {
   getProviderSettings,
 } from '../controllers/providerSettingsController';
 
+const upload = multer({ dest: 'uploads/temp/' });
 const router = Router();
 
 // Toggle or set provider availability
@@ -23,7 +25,7 @@ router.patch('/settings/visibility', verifyToken, updateAccountVisibility);
 router.patch('/settings/notifications', verifyToken, updateNotificationPreferences);
 router.patch('/settings/localization', verifyToken, updateLocalizationPreferences);
 router.get('/settings', verifyToken, getProviderSettings);
-router.post('/services', verifyToken, addServices);
+router.post('/services', verifyToken, upload.any(), addServices);
 router.get('/services', verifyToken, getMyServices);
 router.get('/public/:providerId/services', getProviderServices);
 router.delete('/services/:serviceId', verifyToken, deleteService);
